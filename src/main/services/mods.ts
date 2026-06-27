@@ -24,6 +24,8 @@ interface IndexEntry {
   projectId?: string
   name?: string
   version?: string
+  /** Modrinth-Versions-ID – für zuverlässige Update-Erkennung. */
+  versionId?: string
 }
 type ModIndex = Record<string, IndexEntry>
 
@@ -122,7 +124,8 @@ async function installRecursive(
   recordIndex(instance.id, file.filename, {
     projectId,
     name: version.name,
-    version: version.version_number
+    version: version.version_number,
+    versionId: version.id
   })
 
   // Pflicht-Abhängigkeiten mitinstallieren.
@@ -185,5 +188,79 @@ export function setModEnabled(
   if (enabled && isDisabled) target = fileName.slice(0, -DISABLED_SUFFIX.length)
   else if (!enabled && !isDisabled) target = fileName + DISABLED_SUFFIX
   if (target !== fileName) renameSync(join(dir, fileName), join(dir, target))
+  return listMods(instanceId)
+}
+
+// --- Updates -----------------------------------------------------------------
+
+/**
+ * Prüft für jede installierte Mod (mit bekannter Projekt-ID), ob bei Modrinth
+ * eine neuere passende Version vorliegt, und setzt ggf. `updateVersion`.
+ */
+export async function checkModUpdates(instanceId: string): Promise<InstalledMod[]> {
+  const instance = readInstanceOrThrow(instanceId)
+  const index = readIndex(instanceId)
+  const mods = listMods(instanceId)
+
+  await Promise.all(
+    mods.map(async (mod) => {
+      const meta = index[baseName(mod.fileName)]
+      if (!meta?.projectId) return
+      try {
+        const latest = await resolveVersion(instance, meta.projectId)
+        const newest = latest.files.find((f) => f.primary) ?? latest.files[0]
+        const isNewer = meta.versionId
+          ? latest.id !== meta.versionId
+          : newest?.filename !== baseName(mod.fileName)
+        if (isNewer) mod.updateVersion = latest.version_number
+      } catch {
+        // Einzelne Fehlschläge ignorieren (Netz/entferntes Projekt).
+      }
+    })
+  )
+  return mods
+}
+
+/** Aktualisiert eine Mod auf die neueste passende Version (Status bleibt erhalten). */
+export async function updateMod(
+  instanceId: string,
+  fileName: string
+): Promise<InstalledMod[]> {
+  assertSafeName(fileName)
+  const instance = readInstanceOrThrow(instanceId)
+  const dir = modsDir(instanceId)
+  const base = baseName(fileName)
+  const meta = readIndex(instanceId)[base]
+  if (!meta?.projectId) {
+    throw new Error('Keine Projekt-Info gespeichert – Update nicht möglich.')
+  }
+
+  const version = await resolveVersion(instance, meta.projectId)
+  const file = version.files.find((f) => f.primary) ?? version.files[0]
+  if (!file) throw new Error('Neue Mod-Datei nicht gefunden.')
+
+  const wasDisabled = fileName.endsWith(DISABLED_SUFFIX)
+  const newName = file.filename + (wasDisabled ? DISABLED_SUFFIX : '')
+  await download({
+    url: file.url,
+    destination: join(dir, newName),
+    validator: file.hashes?.sha1
+      ? { algorithm: 'sha1', hash: file.hashes.sha1 }
+      : undefined
+  })
+
+  // Alte Datei + alten Index-Eintrag entfernen, falls der Name sich geändert hat.
+  const index = readIndex(instanceId)
+  if (file.filename !== base) {
+    rmSync(join(dir, fileName), { force: true })
+    delete index[base]
+  }
+  index[file.filename] = {
+    projectId: meta.projectId,
+    name: version.name,
+    version: version.version_number,
+    versionId: version.id
+  }
+  writeIndex(instanceId, index)
   return listMods(instanceId)
 }

@@ -24,6 +24,7 @@ interface InstancesState {
   remove: (id: string) => Promise<void>
   duplicate: (id: string) => Promise<void>
   rename: (id: string, name: string) => Promise<void>
+  setIcon: (id: string, icon: string) => Promise<void>
   openFolder: (id: string) => Promise<void>
   install: (id: string) => Promise<void>
   launch: (id: string) => Promise<void>
@@ -96,6 +97,11 @@ export const useInstances = create<InstancesState>((set, get) => {
 
     rename: async (id, name) => {
       await window.api.invoke('instances:rename', id, name)
+      await reload()
+    },
+
+    setIcon: async (id, icon) => {
+      await window.api.invoke('instances:setIcon', id, icon)
       await reload()
     },
 

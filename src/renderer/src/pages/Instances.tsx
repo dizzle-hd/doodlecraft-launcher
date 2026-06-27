@@ -9,6 +9,7 @@ import type {
 import { useInstances } from '../store/instances'
 import { Button, Chip, IconButton, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
 import Icon from '../components/icons'
+import { InstanceIcon, IconPicker } from '../components/InstanceIcon'
 
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft',
@@ -36,6 +37,7 @@ export default function Instances(): JSX.Element {
     remove,
     duplicate,
     rename,
+    setIcon,
     openFolder,
     install,
     launch,
@@ -81,6 +83,7 @@ export default function Instances(): JSX.Element {
               onDuplicate={() => duplicate(inst.id)}
               onRemove={() => remove(inst.id)}
               onRename={(name) => rename(inst.id, name)}
+              onSetIcon={(icon) => setIcon(inst.id, icon)}
               onOpenFolder={() => openFolder(inst.id)}
             />
           ))}
@@ -103,6 +106,7 @@ interface CardProps {
   onDuplicate: () => void
   onRemove: () => void
   onRename: (name: string) => void
+  onSetIcon: (icon: string) => void
   onOpenFolder: () => void
 }
 
@@ -115,6 +119,7 @@ function InstanceCard({
   onDuplicate,
   onRemove,
   onRename,
+  onSetIcon,
   onOpenFolder
 }: CardProps): JSX.Element {
   const installing =
@@ -124,6 +129,7 @@ function InstanceCard({
 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(instance.name)
+  const [picking, setPicking] = useState(false)
 
   const commit = (): void => {
     const t = draft.trim()
@@ -134,9 +140,23 @@ function InstanceCard({
   return (
     <div className="instance-card">
       <div className="instance-card__top">
-        <div className="instance-card__icon">
-          <Icon name="cube" size={24} />
-        </div>
+        <button
+          className="instance-card__icon instance-card__icon--btn"
+          title="Icon ändern"
+          onClick={() => setPicking(true)}
+        >
+          <InstanceIcon icon={instance.icon} size={28} />
+        </button>
+        {picking && (
+          <IconPicker
+            current={instance.icon}
+            onPick={(icon) => {
+              onSetIcon(icon)
+              setPicking(false)
+            }}
+            onClose={() => setPicking(false)}
+          />
+        )}
         <div style={{ minWidth: 0, flex: 1 }}>
           {editing ? (
             <Input value={draft} onChange={setDraft} onEnter={commit} full />
@@ -224,6 +244,8 @@ function CreateInstanceModal({ onClose }: { onClose: () => void }): JSX.Element 
 
   // --- Leere Instanz ---
   const [name, setName] = useState('')
+  const [icon, setIcon] = useState('')
+  const [pickingIcon, setPickingIcon] = useState(false)
   const [version, setVersion] = useState('')
   const [loader, setLoader] = useState<'' | LoaderType>('')
   const [loaderVersion, setLoaderVersion] = useState('')
@@ -264,7 +286,8 @@ function CreateInstanceModal({ onClose }: { onClose: () => void }): JSX.Element 
         name,
         mcVersion: version,
         loader: loader || undefined,
-        loaderVersion: loaderVersion || undefined
+        loaderVersion: loaderVersion || undefined,
+        icon: icon || undefined
       })
       onClose()
     } catch (e) {
@@ -312,9 +335,28 @@ function CreateInstanceModal({ onClose }: { onClose: () => void }): JSX.Element 
       {tab === 'empty' ? (
         <>
           <div className="form-row">
-            <label>Name</label>
-            <Input value={name} onChange={setName} placeholder="Meine Instanz" full />
+            <label>Name & Icon</label>
+            <div className="row">
+              <button
+                className="instance-card__icon instance-card__icon--btn"
+                title="Icon wählen"
+                onClick={() => setPickingIcon(true)}
+              >
+                <InstanceIcon icon={icon} size={26} />
+              </button>
+              <Input value={name} onChange={setName} placeholder="Meine Instanz" full />
+            </div>
           </div>
+          {pickingIcon && (
+            <IconPicker
+              current={icon}
+              onPick={(v) => {
+                setIcon(v)
+                setPickingIcon(false)
+              }}
+              onClose={() => setPickingIcon(false)}
+            />
+          )}
 
           <div className="form-row">
             <label>Minecraft-Version</label>

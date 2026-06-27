@@ -3,6 +3,7 @@ import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
 import { Button, Chip, ProgressBar, Select } from '../components/ui'
 import Icon from '../components/icons'
+import { InstanceIcon } from '../components/InstanceIcon'
 import SkinHead from '../components/SkinHead'
 
 const PHASE_LABEL: Record<string, string> = {
@@ -113,7 +114,7 @@ export default function Play({
       <div className="play-hero">
         <div className="row" style={{ gap: 14 }}>
           <div className="instance-card__icon" style={{ width: 56, height: 56 }}>
-            <Icon name="cube" size={30} />
+            <InstanceIcon icon={current.icon} size={34} />
           </div>
           <div>
             <div className="play-hero__title">{current.name}</div>

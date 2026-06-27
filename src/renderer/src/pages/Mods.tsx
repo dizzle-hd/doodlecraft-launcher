@@ -78,6 +78,34 @@ export default function Mods(): JSX.Element {
     setInstalled(await window.api.invoke('mods:remove', instanceId, mod.fileName))
   }
 
+  const [checking, setChecking] = useState(false)
+  const [updating, setUpdating] = useState<string | null>(null)
+
+  const checkUpdates = async (): Promise<void> => {
+    if (!instanceId) return
+    setChecking(true)
+    setError(null)
+    try {
+      setInstalled(await window.api.invoke('mods:checkUpdates', instanceId))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const doUpdate = async (mod: InstalledMod): Promise<void> => {
+    setUpdating(mod.fileName)
+    setError(null)
+    try {
+      setInstalled(await window.api.invoke('mods:update', instanceId, mod.fileName))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   if (instances.length === 0) {
     return (
       <div className="stack">
@@ -170,7 +198,16 @@ export default function Mods(): JSX.Element {
       )}
 
       <Card>
-        <h3 className="card__title">Installierte Mods ({installed.length})</h3>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+          <h3 className="card__title" style={{ margin: 0 }}>
+            Installierte Mods ({installed.length})
+          </h3>
+          {installed.length > 0 && (
+            <Button small variant="ghost" onClick={checkUpdates} disabled={checking}>
+              {checking ? 'Prüfe …' : 'Nach Updates suchen'}
+            </Button>
+          )}
+        </div>
         {installed.length === 0 ? (
           <span className="muted">Noch keine Mods installiert.</span>
         ) : (
@@ -186,7 +223,20 @@ export default function Mods(): JSX.Element {
                     {mod.version ? `${mod.version} · ` : ''}
                     {(mod.size / 1024 / 1024).toFixed(1)} MB
                   </span>
+                  {mod.updateVersion && (
+                    <span className="mod-update">↑ Update: {mod.updateVersion}</span>
+                  )}
                 </div>
+                {mod.updateVersion && (
+                  <Button
+                    small
+                    variant="primary"
+                    onClick={() => doUpdate(mod)}
+                    disabled={updating === mod.fileName}
+                  >
+                    {updating === mod.fileName ? 'läuft …' : 'Aktualisieren'}
+                  </Button>
+                )}
                 {!mod.enabled && <Chip>deaktiviert</Chip>}
                 <Button small variant="ghost" onClick={() => toggle(mod)}>
                   {mod.enabled ? 'Deaktivieren' : 'Aktivieren'}

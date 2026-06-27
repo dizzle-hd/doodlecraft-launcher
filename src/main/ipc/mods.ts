@@ -4,7 +4,9 @@ import {
   installMod,
   listMods,
   removeMod,
-  setModEnabled
+  setModEnabled,
+  checkModUpdates,
+  updateMod
 } from '../services/mods'
 import { searchModpacks, installModpack } from '../services/modpacks'
 
@@ -21,6 +23,8 @@ export function registerModHandlers(): void {
   handle('mods:setEnabled', (_ctx, instanceId, fileName, enabled) =>
     setModEnabled(instanceId, fileName, enabled)
   )
+  handle('mods:checkUpdates', (_ctx, instanceId) => checkModUpdates(instanceId))
+  handle('mods:update', (_ctx, instanceId, fileName) => updateMod(instanceId, fileName))
 
   handle('modpacks:search', (_ctx, query) => searchModpacks(query))
   handle('modpacks:install', (ctx, projectId) => installModpack(ctx.sender, projectId))

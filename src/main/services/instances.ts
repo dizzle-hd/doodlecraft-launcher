@@ -103,6 +103,7 @@ export function createInstance(input: CreateInstanceInput): Instance {
     mcVersion: input.mcVersion,
     loader: input.loader,
     loaderVersion: input.loaderVersion?.trim() || undefined,
+    icon: input.icon || undefined,
     installed: false,
     createdAt: Date.now()
   }
@@ -144,5 +145,11 @@ export function renameInstance(id: string, name: string): Instance[] {
     throw new Error('Name darf nicht leer sein.')
   }
   patchInstance(id, { name: trimmed })
+  return listInstances()
+}
+
+/** Setzt das Instanz-Icon (Emoji/data:-URL; leer = zurück auf Standard). */
+export function setInstanceIcon(id: string, icon: string): Instance[] {
+  patchInstance(id, { icon: icon || undefined })
   return listInstances()
 }

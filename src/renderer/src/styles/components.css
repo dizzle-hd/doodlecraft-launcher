@@ -866,6 +866,49 @@
   text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
+/* Icon-Auswahl (Instanz-Icons) */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.emoji-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.12s;
+}
+.emoji-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+.emoji-cell.is-active {
+  border-color: var(--accent);
+}
+.instance-card__icon--btn {
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.instance-card__icon--btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+
+/* Update-Badge bei Mods */
+.mod-update {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 /* Akzentfarben-Auswahl */
 .accent-row {
   display: flex;

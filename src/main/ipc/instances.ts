@@ -8,6 +8,7 @@ import {
   deleteInstance,
   duplicateInstance,
   renameInstance,
+  setInstanceIcon,
   instanceDir
 } from '../services/instances'
 import { installInstance } from '../services/install'
@@ -34,6 +35,7 @@ export function registerInstanceHandlers(): void {
   handle('instances:delete', (_ctx, id) => deleteInstance(id))
   handle('instances:duplicate', (_ctx, id) => duplicateInstance(id))
   handle('instances:rename', (_ctx, id, name) => renameInstance(id, name))
+  handle('instances:setIcon', (_ctx, id, icon) => setInstanceIcon(id, icon))
   handle('instances:openFolder', async (_ctx, id) => {
     await shell.openPath(instanceDir(id))
   })

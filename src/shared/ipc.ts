@@ -92,6 +92,8 @@ export interface Instance {
   launchVersion?: string
   /** Mojang-Java-Komponente, die für den Start gebraucht wird (z. B. java-runtime-gamma). */
   javaComponent?: string
+  /** Eigenes Icon: Emoji-Zeichen ODER eine `data:`-Bild-URL. Leer = Standard. */
+  icon?: string
   /** true, sobald alle Dateien (inkl. Loader) vollständig installiert sind. */
   installed: boolean
   createdAt: number
@@ -104,6 +106,7 @@ export interface CreateInstanceInput {
   loader?: LoaderType
   /** Optional; leer = beim Installieren neueste/empfohlene Version wählen. */
   loaderVersion?: string
+  icon?: string
 }
 
 /** Eine wählbare Loader-Version (für die UI-Combo). */
@@ -156,6 +159,8 @@ export interface InstalledMod {
   name?: string
   projectId?: string
   version?: string
+  /** Von `mods:checkUpdates` gesetzt: neuere verfügbare Versionsnummer. */
+  updateVersion?: string
 }
 
 /** Neue Log-Zeilen aus einem laufenden Spielprozess. */
@@ -269,6 +274,11 @@ export interface IpcInvokeMap {
     args: [instanceId: string, name: string]
     result: Instance[]
   }
+  /** Setzt das Instanz-Icon (Emoji oder data:-URL; leer = Standard). */
+  'instances:setIcon': {
+    args: [instanceId: string, icon: string]
+    result: Instance[]
+  }
   /** Öffnet den Instanz-Ordner im Datei-Explorer des Systems. */
   'instances:openFolder': {
     args: [instanceId: string]
@@ -321,6 +331,16 @@ export interface IpcInvokeMap {
   }
   'mods:list': {
     args: [instanceId: string]
+    result: InstalledMod[]
+  }
+  /** Prüft für alle installierten Mods, ob neuere Versionen verfügbar sind. */
+  'mods:checkUpdates': {
+    args: [instanceId: string]
+    result: InstalledMod[]
+  }
+  /** Aktualisiert eine Mod auf die neueste passende Version. */
+  'mods:update': {
+    args: [instanceId: string, fileName: string]
     result: InstalledMod[]
   }
   'mods:remove': {

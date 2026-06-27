@@ -1,5 +1,6 @@
 import { existsSync } from 'fs'
 import type { ChildProcess } from 'child_process'
+import type { Readable } from 'stream'
 import type { WebContents } from 'electron'
 import { launch, createMinecraftProcessWatcher, type LaunchOption } from '@xmcl/core'
 import { paths } from '../paths'
@@ -13,12 +14,63 @@ import type { Instance, LaunchStatus } from '@shared/ipc'
 /** Laufende Prozesse je Instanz-ID, um Doppelstarts zu verhindern. */
 const running = new Map<string, ChildProcess>()
 
+/** Ringpuffer der letzten Log-Zeilen je Instanz (für die Logs-Ansicht). */
+const logs = new Map<string, string[]>()
+const MAX_LOG_LINES = 3000
+
 export function runningInstanceIds(): string[] {
   return [...running.keys()]
 }
 
+/** Bisher gepufferte Log-Zeilen einer Instanz. */
+export function getLogs(instanceId: string): string[] {
+  return logs.get(instanceId) ?? []
+}
+
+/** Leert den Log-Puffer einer Instanz. */
+export function clearLogs(instanceId: string): void {
+  logs.delete(instanceId)
+}
+
 function status(sender: WebContents, payload: LaunchStatus): void {
   emit(sender, 'launch:status', payload)
+}
+
+/** Hängt Zeilen an den Puffer (gedeckelt) und pusht sie an den Renderer. */
+function pushLogLines(sender: WebContents, instanceId: string, lines: string[]): void {
+  if (lines.length === 0) return
+  const buffer = logs.get(instanceId) ?? []
+  buffer.push(...lines)
+  if (buffer.length > MAX_LOG_LINES) {
+    buffer.splice(0, buffer.length - MAX_LOG_LINES)
+  }
+  logs.set(instanceId, buffer)
+  emit(sender, 'launch:log', { instanceId, lines })
+}
+
+/**
+ * Liest einen stdout/stderr-Stream zeilenweise (mit Übertrag für Teil-Zeilen)
+ * und leitet jede Zeile als Log weiter.
+ */
+function attachLogStream(
+  sender: WebContents,
+  instanceId: string,
+  stream: Readable | null
+): void {
+  if (!stream) return
+  let leftover = ''
+  stream.setEncoding('utf8')
+  stream.on('data', (chunk: string) => {
+    const parts = (leftover + chunk).split(/\r?\n/)
+    leftover = parts.pop() ?? ''
+    pushLogLines(sender, instanceId, parts)
+  })
+  stream.on('end', () => {
+    if (leftover) {
+      pushLogLines(sender, instanceId, [leftover])
+      leftover = ''
+    }
+  })
 }
 
 /**
@@ -85,6 +137,8 @@ export async function launchInstance(
   }
 
   status(sender, { instanceId, state: 'launching' })
+  // Frischer Log-Puffer pro Start.
+  logs.set(instanceId, [])
 
   let proc: ChildProcess
   try {
@@ -96,6 +150,8 @@ export async function launchInstance(
   }
 
   running.set(instanceId, proc)
+  attachLogStream(sender, instanceId, proc.stdout)
+  attachLogStream(sender, instanceId, proc.stderr)
   const updated = patchInstance(instanceId, { lastPlayed: Date.now() })
 
   const watcher = createMinecraftProcessWatcher(proc)

@@ -84,7 +84,8 @@ src/
       versions.ts          # Mojang-Versionsliste (getVersionList) + In-Memory-Cache (M4)
       instances.ts         # Instanz-CRUD: list/create/delete/duplicate + patchInstance (M4)
       install.ts           # Vanilla-Install (installTask) + Java-Runtime + Fortschritts-Events (M4)
-      launch.ts            # Spielstart via @xmcl/core launch() + Process-Watcher + launch:status (M5)
+      launch.ts            # Spielstart via @xmcl/core launch() + Process-Watcher + launch:status (M5);
+                           #   erfasst stdout/stderr (launch:log) + Log-Ringpuffer (getLogs/clearLogs)
       loaders.ts           # Loader-Versionslisten + Default-Auswahl (Fabric/Forge/Quilt) (M6)
       modrinth.ts          # Modrinth-API-Helfer (fetch + Suche + Antwort-Typen) (M7)
       mods.ts              # Mod-Suche/Install/List/Toggle/Remove je Instanz (M7)
@@ -111,6 +112,7 @@ src/
         Play.tsx           # M5 Start-Seite (Spielen-Button + Status)
         Mods.tsx           # M7 Mod-Suche/Verwaltung je Instanz (Modrinth)
         Settings.tsx       # M8 Einstellungen (RAM, Java-Pfad, Snapshots)
+        Logs.tsx           # Logs-Ansicht: Live-stdout/stderr je Instanz (launch:log)
       store/accounts.ts    # zustand-Store, spiegelt Main-Auth
       store/instances.ts   # zustand-Store: Instanzen/Versionen/Settings + Install-Progress
       styles/
@@ -289,13 +291,30 @@ Sandbox **nicht möglich** — die Netzwerk-Policy blockiert diese Hosts und es
 gibt kein electron-Binary/Display. Auf Windows wie in den jeweiligen
 „Verifikations-Hinweisen" oben durchspielen.
 
+### Logs-Ansicht (erledigt)
+
+`services/launch.ts` liest stdout/stderr des Spielprozesses zeilenweise und
+pusht sie als `launch:log` (`LogChunk`); ein Ringpuffer (max. 3000 Zeilen je
+Instanz) erlaubt Backfill über `logs:get`, `logs:clear` leert ihn. Die Seite
+`pages/Logs.tsx` (Nav „🪵 Logs") zeigt die Ausgabe live mit Autoscroll.
+
+### CI: automatischer Windows-Build (erledigt)
+
+`.github/workflows/build.yml` baut auf `windows-latest` bei Push (master,
+`claude/**`), PRs, Tags `v*` und manuell: `npm ci` → `npm run typecheck` →
+`npm run build` → `npx electron-builder --win --publish never` (NSIS-Setup +
+Portable laut `electron-builder.yml`). Artefakte werden als
+`doodlecraft-launcher-windows` hochgeladen; bei einem Tag `v*` entsteht zusätzlich
+ein GitHub-Release (`softprops/action-gh-release`, `permissions: contents: write`).
+Hinweis: Das nicht-standardisierte `allowScripts: {}` in `package.json` ist nur
+für die Entwicklungs-Sandbox relevant — echtes `npm`/`npm ci` ignoriert es, daher
+lädt electron sein Binary auf dem Runner normal herunter.
+
 ### Sinnvolle Restpunkte (optional)
 - **App-Icon/Branding** unter `resources/` (von `electron-builder.yml`
   `buildResources` erwartet) + `icon`-Felder.
-- **Reales Packaging** auf Windows testen (`npm run package`).
-- **Feinschliff**: Fehler-Toasts statt Inline-Text, Logs-Ansicht (stdout aus dem
-  Process-Watcher in `services/launch.ts`), Instanz-Einstellungen pro Instanz
-  (eigener RAM/Java-Override), CurseForge als zweite Mod-Quelle neben Modrinth.
+- **Feinschliff**: Fehler-Toasts statt Inline-Text, Instanz-Einstellungen pro
+  Instanz (eigener RAM/Java-Override), CurseForge als zweite Mod-Quelle.
 
 ## Verifikations-Werkzeuge (bewährt)
 

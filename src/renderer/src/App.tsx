@@ -5,6 +5,7 @@ import Accounts from './pages/Accounts'
 import Instances from './pages/Instances'
 import Mods from './pages/Mods'
 import Play from './pages/Play'
+import Logs from './pages/Logs'
 import Settings from './pages/Settings'
 import SkinHead from './components/SkinHead'
 import { useAccounts } from './store/accounts'
@@ -13,6 +14,7 @@ const NAV: NavItem[] = [
   { id: 'play', label: '▶ Spielen' },
   { id: 'instances', label: '☷ Instanzen' },
   { id: 'mods', label: '🧩 Mods' },
+  { id: 'logs', label: '🪵 Logs' },
   { id: 'accounts', label: '☺ Accounts' },
   { id: 'gallery', label: '✎ Design-System' },
   { id: 'settings', label: '⚙ Einstellungen' }
@@ -56,6 +58,7 @@ export default function App(): JSX.Element {
       {active === 'play' && <Play />}
       {active === 'instances' && <Instances />}
       {active === 'mods' && <Mods />}
+      {active === 'logs' && <Logs />}
       {active === 'gallery' && <Gallery />}
       {active === 'accounts' && <Accounts />}
       {active === 'settings' && <Settings />}

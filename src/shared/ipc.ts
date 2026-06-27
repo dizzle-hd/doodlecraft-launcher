@@ -158,6 +158,12 @@ export interface InstalledMod {
   version?: string
 }
 
+/** Neue Log-Zeilen aus einem laufenden Spielprozess. */
+export interface LogChunk {
+  instanceId: string
+  lines: string[]
+}
+
 /** Status-Push während/nach dem Spielstart (M5). */
 export interface LaunchStatus {
   instanceId: string
@@ -279,6 +285,16 @@ export interface IpcInvokeMap {
     args: []
     result: string[]
   }
+  /** Bisher gepufferte Log-Zeilen einer Instanz (für die Logs-Ansicht). */
+  'logs:get': {
+    args: [instanceId: string]
+    result: string[]
+  }
+  /** Leert den Log-Puffer einer Instanz. */
+  'logs:clear': {
+    args: [instanceId: string]
+    result: void
+  }
 
   /** Modrinth-Mod-Suche, gefiltert nach Loader + MC-Version der Instanz. */
   'mods:search': {
@@ -322,6 +338,7 @@ export interface IpcEventMap {
   'auth:deviceCode': DeviceCodeInfo
   'install:progress': InstallProgress
   'launch:status': LaunchStatus
+  'launch:log': LogChunk
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

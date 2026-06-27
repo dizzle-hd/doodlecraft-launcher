@@ -11,7 +11,12 @@ import {
   instanceDir
 } from '../services/instances'
 import { installInstance } from '../services/install'
-import { launchInstance, runningInstanceIds } from '../services/launch'
+import {
+  launchInstance,
+  runningInstanceIds,
+  getLogs,
+  clearLogs
+} from '../services/launch'
 import { listLoaderVersions } from '../services/loaders'
 
 /** IPC-Handler für Einstellungen, Versionen, Instanzen (M4) und Start (M5). */
@@ -35,4 +40,6 @@ export function registerInstanceHandlers(): void {
   handle('instances:install', (ctx, id) => installInstance(ctx.sender, id))
   handle('instances:launch', (ctx, id) => launchInstance(ctx.sender, id))
   handle('instances:running', () => runningInstanceIds())
+  handle('logs:get', (_ctx, id) => getLogs(id))
+  handle('logs:clear', (_ctx, id) => clearLogs(id))
 }

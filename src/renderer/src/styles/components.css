@@ -281,6 +281,23 @@
   -webkit-box-orient: vertical;
 }
 
+/* --- Logs --- */
+.log-view {
+  margin-top: 12px;
+  height: 460px;
+  overflow: auto;
+  padding: 12px 14px;
+  background: #211d1a;
+  color: #e7e0d4;
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* --- Modal / Device-Code --- */
 .modal-overlay {
   position: fixed;

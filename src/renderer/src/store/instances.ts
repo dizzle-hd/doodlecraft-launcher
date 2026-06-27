@@ -3,6 +3,7 @@ import type {
   CreateInstanceInput,
   Instance,
   InstallProgress,
+  LaunchStatus,
   LauncherSettings,
   VersionList
 } from '@shared/ipc'
@@ -14,6 +15,8 @@ interface InstancesState {
   loaded: boolean
   /** Laufender Installations-Fortschritt je Instanz-ID. */
   progress: Record<string, InstallProgress>
+  /** Zuletzt gemeldeter Start-Status je Instanz-ID. */
+  launchStatus: Record<string, LaunchStatus>
   refresh: () => Promise<void>
   loadVersions: () => Promise<void>
   setShowSnapshots: (value: boolean) => Promise<void>
@@ -21,17 +24,31 @@ interface InstancesState {
   remove: (id: string) => Promise<void>
   duplicate: (id: string) => Promise<void>
   install: (id: string) => Promise<void>
+  launch: (id: string) => Promise<void>
   setProgress: (p: InstallProgress) => void
+  setLaunchStatus: (s: LaunchStatus) => void
 }
 
 /** Spiegelt Instanzen, Versionen und Einstellungen aus dem Main-Prozess. */
 export const useInstances = create<InstancesState>((set, get) => {
   const reload = async (): Promise<void> => {
-    const [instances, settings] = await Promise.all([
+    const [instances, settings, runningIds] = await Promise.all([
       window.api.invoke('instances:list'),
-      window.api.invoke('settings:get')
+      window.api.invoke('settings:get'),
+      window.api.invoke('instances:running')
     ])
-    set({ instances, settings, loaded: true })
+    set((s) => {
+      // Start-Status mit der tatsächlich laufenden Liste abgleichen.
+      const launchStatus = { ...s.launchStatus }
+      for (const inst of instances) {
+        const isRunning = runningIds.includes(inst.id)
+        const known = launchStatus[inst.id]
+        if (isRunning && (!known || (known.state !== 'launching' && known.state !== 'running'))) {
+          launchStatus[inst.id] = { instanceId: inst.id, state: 'running' }
+        }
+      }
+      return { instances, settings, loaded: true, launchStatus }
+    })
   }
 
   return {
@@ -40,6 +57,7 @@ export const useInstances = create<InstancesState>((set, get) => {
     settings: null,
     loaded: false,
     progress: {},
+    launchStatus: {},
 
     refresh: reload,
 
@@ -85,8 +103,22 @@ export const useInstances = create<InstancesState>((set, get) => {
       }
     },
 
+    launch: async (id) => {
+      try {
+        await window.api.invoke('instances:launch', id)
+      } finally {
+        await reload()
+      }
+    },
+
     setProgress: (p) => {
       set((s) => ({ progress: { ...s.progress, [p.instanceId]: p } }))
+    },
+
+    setLaunchStatus: (s) => {
+      set((state) => ({
+        launchStatus: { ...state.launchStatus, [s.instanceId]: s }
+      }))
     }
   }
 })

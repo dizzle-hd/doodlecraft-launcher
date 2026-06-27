@@ -21,13 +21,13 @@ Der vollständige Original-Plan liegt unter
 | **M2** | Drawing-Style Design-System (wired-elements, RoughJS, Fonts) | ✅ fertig & verifiziert |
 | **M3** | Auth: MS Device-Code (öffentl. Client-ID) + Offline + Multi-Account | ✅ fertig & verifiziert |
 | **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | ✅ fertig (build/typecheck grün; Download-Verifikation nur außerhalb dieser Sandbox möglich) |
-| M5 | Spielstart (@xmcl/core) | 🚧 **HIER WEITERMACHEN** |
-| M6 | Mod-Loader (Fabric/Forge/Quilt) | ⬜ offen |
+| **M5** | Spielstart (@xmcl/core) | ✅ fertig (build/typecheck grün; echter Start nur außerhalb dieser Sandbox prüfbar) |
+| M6 | Mod-Loader (Fabric/Forge/Quilt) | 🚧 **HIER WEITERMACHEN** |
 | M7 | Mods & Modpacks (Modrinth/CurseForge) | ⬜ offen |
 | M8 | Politur & Windows-Build | ⬜ offen |
 
-Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M4 completed,
-M5 in_progress.
+Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M5 completed,
+M6 in_progress.
 
 ## So läuft das Projekt
 
@@ -84,6 +84,7 @@ src/
       versions.ts          # Mojang-Versionsliste (getVersionList) + In-Memory-Cache (M4)
       instances.ts         # Instanz-CRUD: list/create/delete/duplicate + patchInstance (M4)
       install.ts           # Vanilla-Install (installTask) + Java-Runtime + Fortschritts-Events (M4)
+      launch.ts            # Spielstart via @xmcl/core launch() + Process-Watcher + launch:status (M5)
   preload/
     index.ts               # contextBridge -> window.api.invoke()/on() (generisch, getypt)
     index.d.ts             # Window.api Typ
@@ -174,14 +175,42 @@ Versionen, Instanzen, Vanilla-Download und Java-Provisioning sind implementiert.
 > Dateien unter `paths.minecraft` (versions/libraries/assets) + `paths.instances/<slug>/`,
 > Java unter `paths.java/<component>/`.
 
-## 👉 Nächster Schritt: M5 (Spielstart) implementieren
+## ✅ M5 erledigt — so funktioniert es
 
-`getLaunchAuth(accountId)` aus `services/auth.ts` nutzen (liefert
-`accessToken/uuid/name/userType`), Spielstart mit `@xmcl/core` `launch()`.
-Java-Binary aus `paths.java/<instance.javaComponent>/` auflösen (siehe
-`findJavaBinary()` in `services/install.ts`), Heap aus `settings.maxMemoryMb`.
-Den „Spielen"-Button in `pages/Play.tsx` aktivieren und nach Start
-`patchInstance(id, { lastPlayed: Date.now() })` setzen.
+- **`services/launch.ts`** — `launchInstance(sender, instanceId)`:
+  - Java über `resolveJava()`: erst manueller `settings.javaPath`, sonst
+    `resolveJavaBinary(instance.javaComponent)` (aus `services/install.ts`,
+    `paths.java/<component>/bin/java[.exe]`, Konsolen-Binary für stdout).
+  - Account = aktiver Account (`getActiveAccount()`), Token via `getLaunchAuth()`.
+  - `launch()` mit `version: instance.mcVersion`, `gamePath = instanceDir(id)`
+    (cwd/saves/mods je Instanz), `resourcePath = paths.minecraft` (shared
+    assets/libraries), `gameProfile`, `accessToken`. **userType**: für Microsoft
+    weglassen (xmcl-Default `msa`), für Offline `'legacy'`. Heap aus
+    `settings.maxMemoryMb`.
+  - `createMinecraftProcessWatcher` → Events als `launch:status`
+    (`launching`/`running`/`exited`/`error`, inkl. Exit-Code & Crash-Report).
+    `running`-Map verhindert Doppelstarts; `instances:running` liefert die IDs.
+  - Nach Spawn `patchInstance(id, { lastPlayed: Date.now() })`.
+- **IPC**: `instances:launch`, `instances:running`; Event `launch:status`.
+- **Renderer**: `pages/Play.tsx` (Instanz-Auswahl, „Spielen"-Button aktiv,
+  Status-Anzeige) und ein „▶ Spielen"-Button je installierter Instanz in
+  `pages/Instances.tsx`. `store/instances.ts` hält `launchStatus` + `launch()`.
+
+> ⚠️ **Verifikations-Hinweis:** typecheck + build grün, `@xmcl/core`-Runtime-
+> Exports (`launch`, `createMinecraftProcessWatcher`) geprüft. Der **echte
+> Spielstart** ist hier nicht testbar (kein Mojang-Netz für den Download in
+> dieser Sandbox, kein Java/Display). Auf Windows verifizieren: installierte
+> Instanz wählen → „Spielen" → MC-Fenster erscheint, Status wechselt auf „läuft".
+
+## 👉 Nächster Schritt: M6 (Mod-Loader) implementieren
+
+Fabric/Forge/Quilt via `@xmcl/installer` (`installFabric`, `installForge`,
+`installQuiltVersion`, `getFabricLoaders`/`getForgeVersionList`/`getQuiltLoaders`).
+Loader-Auswahl beim Anlegen/Bearbeiten der Instanz (`instance.loader` +
+`loaderVersion` sind im Schema schon vorhanden). Der Loader installiert eine
+abgeleitete Version unter `paths.minecraft/versions/<loader-id>`; diese ID dann
+als `version` an `launch()` geben (statt der reinen `mcVersion`). Tipp: in
+`instance.json` zusätzlich die zu startende `launchVersion`/abgeleitete ID ablegen.
 
 ## Verifikations-Werkzeuge (bewährt)
 

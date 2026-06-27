@@ -1,26 +1,71 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { LaunchStatus } from '@shared/ipc'
 import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
 import DoodleCard from '../components/DoodleCard'
 import SkinHead from '../components/SkinHead'
-import { WiredButton } from '../components/wired'
+import { WiredButton, WiredCombo, WiredItem } from '../components/wired'
+
+/** Menschlicher Text + ob ein Start-Status „beschäftigt" bedeutet. */
+function describeStatus(status: LaunchStatus | undefined): {
+  text: string
+  busy: boolean
+} {
+  if (!status) return { text: '', busy: false }
+  switch (status.state) {
+    case 'launching':
+      return { text: 'Wird gestartet …', busy: true }
+    case 'running':
+      return { text: 'Läuft – viel Spaß!', busy: true }
+    case 'exited':
+      return {
+        text:
+          status.code === 0
+            ? 'Spiel beendet.'
+            : `Spiel beendet (Code ${status.code}).${
+                status.error ? ' Absturz – siehe Crash-Report.' : ''
+              }`,
+        busy: false
+      }
+    case 'error':
+      return { text: `Start fehlgeschlagen: ${status.error ?? 'unbekannt'}`, busy: false }
+    default:
+      return { text: '', busy: false }
+  }
+}
 
 /**
- * Start-Seite. Zeigt die zuletzt gespielte Instanz und den aktiven Account.
- * Der eigentliche Spielstart folgt in M5.
+ * Start-Seite. Instanz wählen, aktiver Account, großer „Spielen"-Button (M5).
  */
 export default function Play(): JSX.Element {
-  const { instances, loaded, refresh } = useInstances()
+  const { instances, loaded, launchStatus, refresh, launch } = useInstances()
   const { accounts, activeId, refresh: refreshAccounts } = useAccounts()
+  const { setLaunchStatus } = useInstances()
+
+  const [selectedId, setSelectedId] = useState('')
 
   useEffect(() => {
     if (!loaded) refresh()
     refreshAccounts()
-  }, [loaded, refresh, refreshAccounts])
+    return window.api.on('launch:status', setLaunchStatus)
+  }, [loaded, refresh, refreshAccounts, setLaunchStatus])
 
-  const current = instances[0] ?? null
+  // Standardmäßig die zuletzt gespielte Instanz vorauswählen.
+  useEffect(() => {
+    if (!selectedId && instances.length > 0) setSelectedId(instances[0].id)
+  }, [instances, selectedId])
+
+  const current = instances.find((i) => i.id === selectedId) ?? instances[0] ?? null
   const account = accounts.find((a) => a.id === activeId) ?? null
-  const canPlay = current?.installed && account !== null
+  const status = current ? launchStatus[current.id] : undefined
+  const { text: statusText, busy } = describeStatus(status)
+  const canPlay = Boolean(current?.installed && account) && !busy
+
+  const hint = !current?.installed
+    ? 'Diese Instanz ist noch nicht installiert (siehe „Instanzen“).'
+    : !account
+      ? 'Bitte zuerst einen Account auswählen (siehe „Accounts“).'
+      : ''
 
   return (
     <div className="stack" style={{ maxWidth: 640 }}>
@@ -29,6 +74,23 @@ export default function Play(): JSX.Element {
       <DoodleCard title="Bereit?">
         {current ? (
           <div className="play-summary">
+            {instances.length > 1 && (
+              <div className="row" style={{ marginBottom: 10 }}>
+                <span style={{ color: 'var(--ink-soft)' }}>Instanz:</span>
+                <WiredCombo
+                  value={current.id}
+                  onSelect={setSelectedId}
+                  style={{ minWidth: 220 }}
+                >
+                  {instances.map((i) => (
+                    <WiredItem key={i.id} value={i.id}>
+                      {i.name} · {i.mcVersion}
+                    </WiredItem>
+                  ))}
+                </WiredCombo>
+              </div>
+            )}
+
             <div className="instance-row__info">
               <span className="instance-row__name">{current.name}</span>
               <div className="row" style={{ gap: 8 }}>
@@ -51,17 +113,29 @@ export default function Play(): JSX.Element {
             </div>
 
             <div style={{ marginTop: 18 }}>
-              <WiredButton elevation={3} disabled={!canPlay}>
-                ▶ Spielen
+              <WiredButton
+                elevation={3}
+                disabled={!canPlay}
+                onClick={() => current && launch(current.id)}
+              >
+                {busy ? '▶ läuft …' : '▶ Spielen'}
               </WiredButton>
             </div>
-            <p style={{ color: 'var(--ink-faint)', fontSize: '0.85rem', marginTop: 10 }}>
-              {!current.installed
-                ? 'Diese Instanz ist noch nicht installiert (siehe „Instanzen“).'
-                : !account
-                  ? 'Bitte zuerst einen Account auswählen (siehe „Accounts“).'
-                  : 'Der Spielstart wird in M5 aktiviert.'}
-            </p>
+
+            {(statusText || hint) && (
+              <p
+                style={{
+                  color:
+                    status?.state === 'error'
+                      ? 'var(--danger)'
+                      : 'var(--ink-faint)',
+                  fontSize: '0.85rem',
+                  marginTop: 10
+                }}
+              >
+                {statusText || hint}
+              </p>
+            )}
           </div>
         ) : (
           <p style={{ color: 'var(--ink-soft)' }}>

@@ -108,6 +108,22 @@ export interface InstallProgress {
   error?: string
 }
 
+/** Status-Push während/nach dem Spielstart (M5). */
+export interface LaunchStatus {
+  instanceId: string
+  /**
+   * `launching` = Prozess wird vorbereitet/gestartet, `running` = MC-Fenster da,
+   * `exited` = Prozess beendet, `error` = Start fehlgeschlagen (z. B. Java fehlt).
+   */
+  state: 'launching' | 'running' | 'exited' | 'error'
+  /** Exit-Code (nur bei `exited`). */
+  code?: number
+  /** Pfad zum Crash-Report, falls vorhanden. */
+  crashReportLocation?: string
+  /** Fehlermeldung (bei `error` bzw. Crash). */
+  error?: string
+}
+
 // ---------------------------------------------------------------------------
 
 /** Renderer -> Main (invoke), Schlüssel = Channel-Name. */
@@ -186,12 +202,26 @@ export interface IpcInvokeMap {
     args: [instanceId: string]
     result: Instance
   }
+  /**
+   * Startet die Instanz mit dem aktiven Account. Löst auf, sobald der Prozess
+   * gespawnt ist; der weitere Verlauf kommt über das Event `launch:status`.
+   */
+  'instances:launch': {
+    args: [instanceId: string]
+    result: Instance
+  }
+  /** IDs aller aktuell laufenden Instanzen. */
+  'instances:running': {
+    args: []
+    result: string[]
+  }
 }
 
 /** Main -> Renderer (Push-Events), Schlüssel = Channel-Name. */
 export interface IpcEventMap {
   'auth:deviceCode': DeviceCodeInfo
   'install:progress': InstallProgress
+  'launch:status': LaunchStatus
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

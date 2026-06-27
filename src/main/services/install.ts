@@ -52,15 +52,28 @@ async function runTracked<T>(
   return rootTask.startAndWait(ctx)
 }
 
-/** Best-effort: Pfad der java-Binary innerhalb eines Runtime-Ordners. */
-function findJavaBinary(runtimeDir: string): string | null {
+/**
+ * Best-effort: Pfad der java-Binary innerhalb eines Runtime-Ordners. Wir
+ * bevorzugen die Konsolen-Variante (`java`/`java.exe`), damit der Process-Watcher
+ * in M5 stdout mitlesen kann.
+ */
+function javaBinaryIn(runtimeDir: string): string | null {
   const candidates =
     process.platform === 'win32'
-      ? [join(runtimeDir, 'bin', 'javaw.exe'), join(runtimeDir, 'bin', 'java.exe')]
+      ? [join(runtimeDir, 'bin', 'java.exe'), join(runtimeDir, 'bin', 'javaw.exe')]
       : process.platform === 'darwin'
         ? [join(runtimeDir, 'jre.bundle', 'Contents', 'Home', 'bin', 'java')]
         : [join(runtimeDir, 'bin', 'java')]
   return candidates.find((p) => existsSync(p)) ?? null
+}
+
+/**
+ * Löst die java-Binary einer Mojang-Java-Komponente unter `paths.java/<component>`
+ * auf (für den Spielstart, M5). `null`, falls (noch) nicht installiert.
+ */
+export function resolveJavaBinary(component: string | undefined): string | null {
+  if (!component) return null
+  return javaBinaryIn(join(paths.java, component))
 }
 
 function runtimeInstalled(runtimeDir: string): boolean {
@@ -99,7 +112,7 @@ async function provisionJava(
   }
 
   // Komponente merken; konkreter Binary-Pfad wird in M5 aufgelöst.
-  findJavaBinary(runtimeDir)
+  javaBinaryIn(runtimeDir)
   return component
 }
 

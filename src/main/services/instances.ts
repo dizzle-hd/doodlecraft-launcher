@@ -39,7 +39,7 @@ function slugify(name: string): string {
 }
 
 /** Validiert eine Instanz-ID gegen Path-Traversal und gibt den Ordner zurück. */
-function instanceDir(id: string): string {
+export function instanceDir(id: string): string {
   if (!SLUG_RE.test(id)) {
     throw new Error(`Ungültige Instanz-ID: ${id}`)
   }

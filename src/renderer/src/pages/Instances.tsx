@@ -19,6 +19,7 @@ export default function Instances(): JSX.Element {
     settings,
     loaded,
     progress,
+    launchStatus,
     refresh,
     loadVersions,
     setShowSnapshots,
@@ -26,7 +27,9 @@ export default function Instances(): JSX.Element {
     remove,
     duplicate,
     install,
-    setProgress
+    launch,
+    setProgress,
+    setLaunchStatus
   } = useInstances()
 
   const [name, setName] = useState('')
@@ -36,8 +39,13 @@ export default function Instances(): JSX.Element {
   useEffect(() => {
     if (!loaded) refresh()
     loadVersions()
-    return window.api.on('install:progress', setProgress)
-  }, [loaded, refresh, loadVersions, setProgress])
+    const offInstall = window.api.on('install:progress', setProgress)
+    const offLaunch = window.api.on('launch:status', setLaunchStatus)
+    return () => {
+      offInstall()
+      offLaunch()
+    }
+  }, [loaded, refresh, loadVersions, setProgress, setLaunchStatus])
 
   // Standardauswahl auf die neueste Release setzen, sobald die Liste da ist.
   useEffect(() => {
@@ -113,7 +121,9 @@ export default function Instances(): JSX.Element {
                 key={inst.id}
                 instance={inst}
                 progress={progress[inst.id]}
+                launchState={launchStatus[inst.id]?.state}
                 onInstall={() => install(inst.id)}
+                onLaunch={() => launch(inst.id)}
                 onDuplicate={() => duplicate(inst.id)}
                 onRemove={() => remove(inst.id)}
               />
@@ -128,7 +138,9 @@ export default function Instances(): JSX.Element {
 interface RowProps {
   instance: Instance
   progress?: ReturnType<typeof useInstances.getState>['progress'][string]
+  launchState?: ReturnType<typeof useInstances.getState>['launchStatus'][string]['state']
   onInstall: () => void
+  onLaunch: () => void
   onDuplicate: () => void
   onRemove: () => void
 }
@@ -136,11 +148,16 @@ interface RowProps {
 function InstanceRow({
   instance,
   progress,
+  launchState,
   onInstall,
+  onLaunch,
   onDuplicate,
   onRemove
 }: RowProps): JSX.Element {
-  const busy = progress !== undefined && progress.phase !== 'done' && progress.phase !== 'error'
+  const installing =
+    progress !== undefined && progress.phase !== 'done' && progress.phase !== 'error'
+  const running = launchState === 'launching' || launchState === 'running'
+  const busy = installing || running
 
   return (
     <li className="instance-row">
@@ -150,18 +167,23 @@ function InstanceRow({
           <span className="doodle-chip">{instance.mcVersion}</span>
           {instance.loader && <span className="doodle-chip">{instance.loader}</span>}
           <span className="doodle-chip">
-            {instance.installed ? 'installiert ✓' : 'nicht installiert'}
+            {running
+              ? 'läuft ▸'
+              : instance.installed
+                ? 'installiert ✓'
+                : 'nicht installiert'}
           </span>
         </div>
       </div>
 
       <div className="row">
-        <WiredButton
-          elevation={2}
-          onClick={onInstall}
-          disabled={busy}
-        >
-          {busy ? 'läuft …' : instance.installed ? 'Reparieren' : '⤓ Installieren'}
+        {instance.installed && (
+          <WiredButton elevation={2} onClick={onLaunch} disabled={busy}>
+            {running ? '▶ läuft …' : '▶ Spielen'}
+          </WiredButton>
+        )}
+        <WiredButton onClick={onInstall} disabled={busy}>
+          {installing ? 'läuft …' : instance.installed ? 'Reparieren' : '⤓ Installieren'}
         </WiredButton>
         <WiredButton onClick={onDuplicate} disabled={busy}>
           Duplizieren

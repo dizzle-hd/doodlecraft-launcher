@@ -1,0 +1,37 @@
+/* Drawing-Style Theme — zentrale Design-Tokens.
+   Lokal gebündelte Handschrift-Fonts (kein CDN -> CSP-konform). */
+@import '@fontsource/patrick-hand/400.css';
+@import '@fontsource/architects-daughter/400.css';
+
+:root {
+  /* Papier & Tinte */
+  --paper: #f4efe1;
+  --paper-2: #fffdf6;
+  --paper-edge: #e7dec8;
+  --ink: #2b2724;
+  --ink-soft: #5b554e;
+  --ink-faint: #9b9388;
+
+  /* Akzente (Minecraft-Gras-Grün + Terrakotta) */
+  --accent: #4f8f3f;
+  --accent-deep: #356029;
+  --accent-2: #c1440e;
+  --danger: #b3322a;
+
+  /* Schrift */
+  --font-hand: 'Patrick Hand', 'Comic Sans MS', cursive;
+  --font-display: 'Architects Daughter', 'Patrick Hand', cursive;
+
+  /* Form */
+  --radius: 10px;
+  --shadow-doodle: 3px 3px 0 rgba(43, 39, 36, 0.18);
+  --shadow-doodle-lg: 5px 6px 0 rgba(43, 39, 36, 0.22);
+}
+
+/* Subtiler Papier-Hintergrund: warme Farbe + sehr leichte Linien-Textur. */
+.paper-bg {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(rgba(43, 39, 36, 0.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+}

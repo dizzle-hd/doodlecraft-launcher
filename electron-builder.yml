@@ -1,0 +1,15 @@
+appId: com.doodlecraft.launcher
+productName: DoodleCraft Launcher
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+win:
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

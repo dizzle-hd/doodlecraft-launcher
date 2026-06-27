@@ -1,0 +1,44 @@
+{
+  "name": "doodlecraft-launcher",
+  "version": "0.1.0",
+  "description": "Minecraft Launcher im Drawing-Style — Login ohne eigene Azure-App",
+  "main": "./out/main/index.js",
+  "author": "Julian",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "package": "electron-vite build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  },
+  "dependencies": {
+    "@fontsource/architects-daughter": "^5.2.7",
+    "@fontsource/patrick-hand": "^5.2.8",
+    "@xmcl/core": "^2.15.1",
+    "@xmcl/installer": "^6.1.2",
+    "@xmcl/user": "^3.0.3",
+    "electron-store": "^8.2.0",
+    "prismarine-auth": "^2.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "roughjs": "^4.6.6",
+    "wired-elements": "^3.0.0-rc.6",
+    "zustand": "^5.0.14"
+  },
+  "allowScripts": {}
+}

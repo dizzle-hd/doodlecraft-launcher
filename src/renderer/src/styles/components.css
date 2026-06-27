@@ -1,0 +1,237 @@
+/* Styles für die Drawing-Style-Komponenten. */
+
+/* --- DoodleCard --- */
+.doodle-card {
+  position: relative;
+  padding: 18px 20px;
+  background: var(--paper-2);
+  border-radius: var(--radius);
+}
+.doodle-card__border {
+  position: absolute;
+  inset: 0;
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+.doodle-card__title {
+  margin: 0 0 10px;
+  color: var(--accent-deep);
+}
+.doodle-card__body {
+  position: relative;
+}
+
+/* --- RoughProgressBar --- */
+.rough-progress {
+  position: relative;
+  width: 100%;
+}
+.rough-progress svg {
+  display: block;
+  width: 100%;
+}
+.rough-progress__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-hand);
+  font-size: 0.85rem;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+/* --- App-Shell (Sidebar + Content) --- */
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100%;
+  min-height: 0;
+}
+.shell__sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 14px;
+  background: var(--paper-edge);
+}
+.shell__sidebar::after {
+  /* handgezeichnete Trennlinie rechts */
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  right: 0;
+  width: 2.5px;
+  background: var(--ink);
+  filter: url(#doodle-wobble);
+}
+.shell__brand {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-deep);
+  margin-bottom: 14px;
+  padding: 0 6px;
+}
+.shell__nav-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  text-align: left;
+  color: var(--ink-soft);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.shell__nav-item:hover {
+  background: rgba(43, 39, 36, 0.07);
+  color: var(--ink);
+}
+.shell__nav-item.is-active {
+  background: var(--paper-2);
+  color: var(--accent-deep);
+  box-shadow: var(--shadow-doodle);
+}
+.shell__content {
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 32px;
+}
+.shell__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper-2);
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-doodle);
+}
+.shell__account-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Doodle-Chip / Badge --- */
+.doodle-chip {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper-2);
+}
+
+/* Hilfsabstände */
+.stack > * + * {
+  margin-top: 14px;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- Accounts --- */
+.skin-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: pixelated;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper-edge);
+  flex: 0 0 auto;
+}
+.skin-head--fallback {
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+.account-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 8px;
+  border-bottom: 1.5px dashed var(--paper-edge);
+}
+.account-row:last-child {
+  border-bottom: none;
+}
+.account-row.is-active {
+  background: rgba(79, 143, 63, 0.1);
+  border-radius: 8px;
+}
+.account-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.account-row__name {
+  font-size: 1.15rem;
+}
+.account-row__active {
+  color: var(--accent-deep);
+  font-size: 0.95rem;
+  padding: 0 6px;
+}
+
+/* --- Modal / Device-Code --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 39, 36, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-card {
+  position: relative;
+  width: min(460px, 90vw);
+  padding: 24px 26px;
+  background: var(--paper-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-doodle-lg);
+}
+.device-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin: 18px 0;
+  padding: 16px;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  letter-spacing: 6px;
+  color: var(--accent-deep);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.device-code__hint {
+  font-family: var(--font-hand);
+  font-size: 0.8rem;
+  letter-spacing: normal;
+  color: var(--ink-faint);
+}

@@ -1,0 +1,78 @@
+@import './theme.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  margin: 0 0 0.3em;
+  letter-spacing: 0.5px;
+}
+
+h1 {
+  font-size: 2.1rem;
+}
+
+a {
+  color: var(--accent-deep);
+}
+
+/* Wobble-Utility: leichtes „handgezeichnetes" Zittern für Ränder/Deko.
+   Sparsam einsetzen — verzerrt auch Text. */
+.wobble {
+  filter: url(#doodle-wobble);
+}
+
+/* Custom Scrollbar im Tinten-Look */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-faint);
+  border-radius: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* wired-elements Grundfarbe an die Tinte angleichen */
+wired-button,
+wired-card,
+wired-input,
+wired-combo,
+wired-item,
+wired-checkbox,
+wired-slider,
+wired-progress,
+wired-tab,
+wired-dialog {
+  color: var(--ink);
+  --wired-item-selected-bg: var(--accent);
+}

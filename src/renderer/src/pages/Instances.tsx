@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { Instance, LoaderType, LoaderVersion } from '@shared/ipc'
+import type {
+  Instance,
+  LoaderType,
+  LoaderVersion,
+  ModSearchHit
+} from '@shared/ipc'
 import { useInstances } from '../store/instances'
 import DoodleCard from '../components/DoodleCard'
 import RoughProgressBar from '../components/RoughProgressBar'
@@ -47,6 +52,12 @@ export default function Instances(): JSX.Element {
   const [loaderVersions, setLoaderVersions] = useState<LoaderVersion[]>([])
   const [loaderLoading, setLoaderLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [packQuery, setPackQuery] = useState('')
+  const [packResults, setPackResults] = useState<ModSearchHit[]>([])
+  const [packSearching, setPackSearching] = useState(false)
+  const [packBusyId, setPackBusyId] = useState<string | null>(null)
+  const [packError, setPackError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loaded) refresh()
@@ -99,6 +110,32 @@ export default function Instances(): JSX.Element {
       setName('')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const handlePackSearch = async (): Promise<void> => {
+    if (!packQuery.trim()) return
+    setPackSearching(true)
+    setPackError(null)
+    try {
+      setPackResults(await window.api.invoke('modpacks:search', packQuery.trim()))
+    } catch (e) {
+      setPackError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPackSearching(false)
+    }
+  }
+
+  const handlePackInstall = async (hit: ModSearchHit): Promise<void> => {
+    setPackBusyId(hit.projectId)
+    setPackError(null)
+    try {
+      await window.api.invoke('modpacks:install', hit.projectId)
+      await refresh()
+    } catch (e) {
+      setPackError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPackBusyId(null)
     }
   }
 
@@ -181,6 +218,51 @@ export default function Instances(): JSX.Element {
         </div>
 
         {error && <p style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
+      </DoodleCard>
+
+      <DoodleCard title="Modpack installieren (Modrinth)">
+        <p style={{ color: 'var(--ink-soft)', marginTop: -4, fontSize: '0.9rem' }}>
+          Sucht ein Modpack und legt es als fertige Instanz an – Version, Loader
+          und Mods werden automatisch übernommen.
+        </p>
+        <div className="row">
+          <WiredInput
+            value={packQuery}
+            placeholder="z. B. Fabulously Optimized …"
+            onValueChange={setPackQuery}
+          />
+          <WiredButton elevation={2} onClick={handlePackSearch} disabled={packSearching}>
+            {packSearching ? 'Suche …' : '🔍 Suchen'}
+          </WiredButton>
+        </div>
+        {packError && (
+          <p style={{ color: 'var(--danger)', marginTop: 8 }}>{packError}</p>
+        )}
+
+        {packResults.length > 0 && (
+          <ul className="mod-list" style={{ marginTop: 12 }}>
+            {packResults.map((hit) => (
+              <li key={hit.projectId} className="mod-row">
+                {hit.iconUrl && (
+                  <img className="mod-row__icon" src={hit.iconUrl} alt="" />
+                )}
+                <div className="mod-row__info">
+                  <span className="mod-row__name">{hit.title}</span>
+                  <span className="mod-row__desc">{hit.description}</span>
+                  <span style={{ color: 'var(--ink-faint)', fontSize: '0.8rem' }}>
+                    von {hit.author} · {hit.downloads.toLocaleString('de-DE')} Downloads
+                  </span>
+                </div>
+                <WiredButton
+                  onClick={() => handlePackInstall(hit)}
+                  disabled={packBusyId !== null}
+                >
+                  {packBusyId === hit.projectId ? 'läuft …' : '⤓ Anlegen'}
+                </WiredButton>
+              </li>
+            ))}
+          </ul>
+        )}
       </DoodleCard>
 
       <DoodleCard title={`Deine Instanzen (${instances.length})`}>

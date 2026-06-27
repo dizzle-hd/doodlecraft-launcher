@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { handle } from './registry'
 import { registerAuthHandlers } from './auth'
 import { registerInstanceHandlers } from './instances'
+import { registerModHandlers } from './mods'
 
 /**
  * Registriert alle IPC-Handler. Pro Meilenstein kommen hier weitere
@@ -18,4 +19,5 @@ export function registerIpcHandlers(): void {
 
   registerAuthHandlers()
   registerInstanceHandlers()
+  registerModHandlers()
 }

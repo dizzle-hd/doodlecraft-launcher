@@ -23,11 +23,11 @@ Der vollständige Original-Plan liegt unter
 | **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | ✅ fertig (build/typecheck grün; Download-Verifikation nur außerhalb dieser Sandbox möglich) |
 | **M5** | Spielstart (@xmcl/core) | ✅ fertig (build/typecheck grün; echter Start nur außerhalb dieser Sandbox prüfbar) |
 | **M6** | Mod-Loader (Fabric/Forge/Quilt) | ✅ fertig (build/typecheck grün; echter Loader-Install nur außerhalb dieser Sandbox prüfbar) |
-| M7 | Mods & Modpacks (Modrinth/CurseForge) | 🚧 **HIER WEITERMACHEN** |
-| M8 | Politur & Windows-Build | ⬜ offen |
+| **M7** | Mods & Modpacks (Modrinth) | ✅ fertig (build/typecheck grün; Modrinth-Netz in dieser Sandbox geblockt) |
+| M8 | Politur & Windows-Build | 🚧 **HIER WEITERMACHEN** |
 
-Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M6 completed,
-M7 in_progress.
+Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M7 completed,
+M8 in_progress.
 
 ## So läuft das Projekt
 
@@ -78,6 +78,7 @@ src/
       index.ts             # registerIpcHandlers() — hier neue Handler-Module einhängen
       auth.ts              # Auth-IPC-Handler
       instances.ts         # IPC für settings/versions/instances (M4)
+      mods.ts              # IPC für mods:* und modpacks:* (M7)
     services/
       encryptedCache.ts    # prismarine-auth Cache-Factory, verschlüsselt via safeStorage
       auth.ts              # AccountManager + Login-Flows + getLaunchAuth() (für M5!)
@@ -86,6 +87,9 @@ src/
       install.ts           # Vanilla-Install (installTask) + Java-Runtime + Fortschritts-Events (M4)
       launch.ts            # Spielstart via @xmcl/core launch() + Process-Watcher + launch:status (M5)
       loaders.ts           # Loader-Versionslisten + Default-Auswahl (Fabric/Forge/Quilt) (M6)
+      modrinth.ts          # Modrinth-API-Helfer (fetch + Suche + Antwort-Typen) (M7)
+      mods.ts              # Mod-Suche/Install/List/Toggle/Remove je Instanz (M7)
+      modpacks.ts          # .mrpack-Install als neue Instanz (unzip + Downloads) (M7)
   preload/
     index.ts               # contextBridge -> window.api.invoke()/on() (generisch, getypt)
     index.d.ts             # Window.api Typ
@@ -104,8 +108,9 @@ src/
       pages/
         Gallery.tsx        # Design-System-Demo (Nav „Design-System")
         Accounts.tsx       # M3 Account-Verwaltung
-        Instances.tsx      # M4 Instanz-Liste + Anlegen + Install-Fortschritt
-        Play.tsx           # M4 Start-Seite (Spielen-Button kommt in M5)
+        Instances.tsx      # M4 Instanz-Liste + Anlegen + Install-Fortschritt; M7 Modpack-Browser
+        Play.tsx           # M5 Start-Seite (Spielen-Button + Status)
+        Mods.tsx           # M7 Mod-Suche/Verwaltung je Instanz (Modrinth)
       store/accounts.ts    # zustand-Store, spiegelt Main-Auth
       store/instances.ts   # zustand-Store: Instanzen/Versionen/Settings + Install-Progress
       styles/
@@ -230,15 +235,51 @@ Versionen, Instanzen, Vanilla-Download und Java-Provisioning sind implementiert.
 > `files.minecraftforge.net` — ggf. Proxy/Allowlist beachten. Auf Windows je Loader
 > eine Instanz anlegen → installieren → starten.
 
-## 👉 Nächster Schritt: M7 (Mods & Modpacks) implementieren
+## ✅ M7 erledigt — so funktioniert es
 
-Mods/Modpacks über Modrinth (`https://api.modrinth.com/v2`) und optional
-CurseForge. Pro Instanz liegt ein `mods/`-Ordner (`paths.instances/<id>/mods`),
-in den die `.jar`-Dateien geladen werden; passend zu `instance.loader` +
-`instance.mcVersion` filtern. Vorschlag: `services/mods.ts` (Suche/Download via
-`fetch`, Datei-Transfer ggf. `@xmcl/file-transfer`), `ipc/mods.ts`
-(`mods:search|install|list|remove`), `pages/Mods.tsx` + Nav-Eintrag. Modpacks
-(Modrinth `.mrpack`) entpacken und als neue Instanz anlegen.
+Alles über Modrinth (`https://api.modrinth.com/v2`, User-Agent gesetzt). CurseForge
+ist bewusst weggelassen (API-Key nötig) — `services/modrinth.ts` ist so gebaut,
+dass eine zweite Quelle später danebengelegt werden kann.
+
+- **`services/modrinth.ts`** — `modrinthGet()`, `searchProjects(query, facets)`,
+  `mapHit()` + Antwort-Typen (nur genutzte Felder).
+- **`services/mods.ts`** — `searchMods(instanceId, query)` (Facetten:
+  `project_type:mod`, `versions:<mc>`, bei Loader `categories:<loader>`),
+  `installMod()` (lädt die passendste Version per `@xmcl/file-transfer` `download`
+  mit sha1-Validator nach `paths.instances/<id>/mods`, **inkl. Pflicht-
+  Dependencies** rekursiv), `listMods/removeMod/setModEnabled`
+  (Aktiv/Inaktiv = `.disabled`-Suffix). Metadaten in `.doodlecraft-mods.json`
+  je mods-Ordner; Dateinamen sind gegen Path-Traversal geschützt.
+- **`services/modpacks.ts`** — `searchModpacks()` und `installModpack(sender,
+  projectId)`: lädt das `.mrpack`, liest `modrinth.index.json`, leitet
+  MC-Version + Loader (`fabric-loader`/`quilt-loader`/`forge`) ab, legt die
+  Instanz an, entpackt `overrides/`+`client-overrides/` (Zip-Slip-geschützt),
+  lädt alle `files[]` (serverseitig-only übersprungen) und ruft danach
+  `installInstance()` (Vanilla+Loader+Java, mit `install:progress`).
+- **IPC** (`ipc/mods.ts`): `mods:search|install|list|remove|setEnabled`,
+  `modpacks:search|install`.
+- **Renderer**: `pages/Mods.tsx` (Instanz wählen → Modrinth-Suche → installieren;
+  installierte Mods aktivieren/deaktivieren/entfernen), Nav „🧩 Mods". Modpack-
+  Browser als Karte in `pages/Instances.tsx`.
+
+> ⚠️ **Verifikations-Hinweis:** typecheck + build grün, Runtime-Exports
+> (`download`, `@xmcl/unzip` `open/readAllEntries/readEntry`, `fetch`) geprüft.
+> Die Modrinth-API ist in dieser Sandbox **geblockt** (`403 Host not in allowlist`),
+> daher kein Live-Test. Auf einer Umgebung mit Internet: in einer Fabric-Instanz
+> z. B. „Sodium" suchen + installieren → liegt unter `instances/<id>/mods/`; ein
+> Modpack (z. B. „Fabulously Optimized") anlegen → neue Instanz startet.
+
+## 👉 Nächster Schritt: M8 (Politur & Windows-Build) implementieren
+
+- **Einstellungen-Seite** (`pages/Settings.tsx`) für `settings` (RAM-Slider
+  `maxMemoryMb`, optionaler `javaPath`, `showSnapshots`) — IPC `settings:get/update`
+  existiert bereits.
+- **Instanz bearbeiten/umbenennen**, „Ordner öffnen" (`shell.openPath`).
+- **Windows-Build**: `npm run package` (electron-builder, `electron-builder.yml`)
+  testen; Icon/Branding, NSIS-Installer + Portable. Achtung: in dieser Sandbox
+  fehlt das electron-Binary (siehe „WICHTIG" oben) — Packaging real nur auf Windows.
+- **Feinschliff**: Fehler-Toasts statt `alert`/Inline-Text, leere Zustände,
+  Logs-Ansicht beim Start (stdout aus dem Process-Watcher), App-Icon.
 
 ## Verifikations-Werkzeuge (bewährt)
 

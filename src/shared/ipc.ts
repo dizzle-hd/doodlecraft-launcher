@@ -128,6 +128,36 @@ export interface InstallProgress {
   error?: string
 }
 
+// ---------------------------------------------------------------------------
+// Mods & Modpacks (M7, Modrinth)
+// ---------------------------------------------------------------------------
+
+export type ModProjectType = 'mod' | 'modpack'
+
+/** Ein Suchtreffer aus der Modrinth-Suche (Mod oder Modpack). */
+export interface ModSearchHit {
+  projectId: string
+  slug: string
+  title: string
+  description: string
+  author: string
+  downloads: number
+  iconUrl?: string
+  projectType: ModProjectType
+}
+
+/** Eine in einer Instanz installierte Mod-Datei. */
+export interface InstalledMod {
+  /** Tatsächlicher Dateiname im mods-Ordner (ggf. mit `.disabled`). */
+  fileName: string
+  enabled: boolean
+  size: number
+  /** Best-effort-Metadaten aus dem Install-Index. */
+  name?: string
+  projectId?: string
+  version?: string
+}
+
 /** Status-Push während/nach dem Spielstart (M5). */
 export interface LaunchStatus {
   instanceId: string
@@ -239,6 +269,42 @@ export interface IpcInvokeMap {
   'instances:running': {
     args: []
     result: string[]
+  }
+
+  /** Modrinth-Mod-Suche, gefiltert nach Loader + MC-Version der Instanz. */
+  'mods:search': {
+    args: [instanceId: string, query: string]
+    result: ModSearchHit[]
+  }
+  'mods:install': {
+    args: [instanceId: string, projectId: string]
+    result: InstalledMod[]
+  }
+  'mods:list': {
+    args: [instanceId: string]
+    result: InstalledMod[]
+  }
+  'mods:remove': {
+    args: [instanceId: string, fileName: string]
+    result: InstalledMod[]
+  }
+  'mods:setEnabled': {
+    args: [instanceId: string, fileName: string, enabled: boolean]
+    result: InstalledMod[]
+  }
+
+  /** Modrinth-Modpack-Suche. */
+  'modpacks:search': {
+    args: [query: string]
+    result: ModSearchHit[]
+  }
+  /**
+   * Installiert ein Modrinth-Modpack als neue Instanz. Fortschritt der
+   * enthaltenen Vanilla-/Loader-Installation kommt über `install:progress`.
+   */
+  'modpacks:install': {
+    args: [projectId: string]
+    result: Instance
   }
 }
 

@@ -8,7 +8,6 @@ interface AccountState {
   refresh: () => Promise<void>
   setActive: (id: string) => Promise<void>
   remove: (id: string) => Promise<void>
-  addOffline: (name: string) => Promise<Account>
   loginMicrosoft: () => Promise<Account>
 }
 
@@ -34,11 +33,6 @@ export const useAccounts = create<AccountState>((set) => {
     remove: async (id) => {
       await window.api.invoke('auth:remove', id)
       await reload()
-    },
-    addOffline: async (name) => {
-      const account = await window.api.invoke('auth:addOffline', name)
-      await reload()
-      return account
     },
     loginMicrosoft: async () => {
       const account = await window.api.invoke('auth:loginMicrosoft')

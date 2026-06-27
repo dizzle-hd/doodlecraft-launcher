@@ -7,8 +7,9 @@
 
 Ein **Minecraft-Launcher im Drawing-Style** (handgezeichnete Optik) mit
 **Login ohne eigene Azure-App**. Stack: **Electron + React + TypeScript**
-(electron-vite). Voller Funktionsumfang geplant: Microsoft- & Offline-Login,
-Multi-Account, Vanilla + Mod-Loader (Fabric/Forge/Quilt), Modpacks, Instanzen.
+(electron-vite). Voller Funktionsumfang: Microsoft-Login (Multi-Account),
+Vanilla + Mod-Loader (Fabric/Forge/Quilt), Modpacks, Instanzen.
+Offline-Accounts werden bewusst NICHT unterstützt.
 
 Der vollständige Original-Plan liegt unter
 `C:\Users\Julian\.claude\plans\tranquil-weaving-rossum.md` (Meilensteine M1–M8).
@@ -19,7 +20,7 @@ Der vollständige Original-Plan liegt unter
 |----|--------|--------|
 | **M1** | Scaffold, sichere Electron-Defaults, IPC-Gerüst | ✅ fertig & verifiziert |
 | **M2** | Drawing-Style Design-System (wired-elements, RoughJS, Fonts) | ✅ fertig & verifiziert |
-| **M3** | Auth: MS Device-Code (öffentl. Client-ID) + Offline + Multi-Account | ✅ fertig & verifiziert |
+| **M3** | Auth: MS Device-Code (öffentl. Client-ID) + Multi-Account (kein Offline) | ✅ fertig & verifiziert |
 | **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | ✅ fertig (build/typecheck grün; Download-Verifikation nur außerhalb dieser Sandbox möglich) |
 | **M5** | Spielstart (@xmcl/core) | ✅ fertig (build/typecheck grün; echter Start nur außerhalb dieser Sandbox prüfbar) |
 | **M6** | Mod-Loader (Fabric/Forge/Quilt) | ✅ fertig (build/typecheck grün; echter Loader-Install nur außerhalb dieser Sandbox prüfbar) |
@@ -137,9 +138,13 @@ src/
 
 1. **Login ohne Azure-App** = `prismarine-auth` mit `Titles.MinecraftNintendoSwitch`
    (öffentliche Client-ID `00000000441cc96b`), `flow: 'live'` (Device-Code).
-   Verifiziert: Microsoft liefert echten `user_code` zurück. Siehe `services/auth.ts`.
+   **WICHTIG:** `deviceType` MUSS zum Title passen — Nintendo-Switch-Title ⇒
+   `deviceType: 'Nintendo'`. Eine falsche Kombination (z. B. `'Win32'`) führt zu
+   `403 Forbidden` bei der Xbox-Title-/Device-Auth. Siehe `services/auth.ts`.
    Tokens werden über `encryptedCache.ts` mit `safeStorage` verschlüsselt abgelegt
    (Fallback Klartext, falls Verschlüsselung nicht verfügbar).
+   **Nur Microsoft-Accounts** — Offline-Accounts wurden entfernt; `listAccounts()`
+   prunt evtl. aus Altständen verbliebene Offline-Accounts beim Laden.
 2. **Fallback eigene Client-ID:** bewusst vorgesehen — bei Bedarf `PUBLIC_TITLE` in
    `services/auth.ts` durch eine eigene Azure-Client-ID + `flow: 'msal'` ersetzbar.
 3. **electron-store auf v8 gepinnt** (v9+ ist ESM-only → bricht das CJS-Main-Bundle).
@@ -192,8 +197,8 @@ Versionen, Instanzen, Vanilla-Download und Java-Provisioning sind implementiert.
   - Account = aktiver Account (`getActiveAccount()`), Token via `getLaunchAuth()`.
   - `launch()` mit `version: instance.mcVersion`, `gamePath = instanceDir(id)`
     (cwd/saves/mods je Instanz), `resourcePath = paths.minecraft` (shared
-    assets/libraries), `gameProfile`, `accessToken`. **userType**: für Microsoft
-    weglassen (xmcl-Default `msa`), für Offline `'legacy'`. Heap aus
+    assets/libraries), `gameProfile`, `accessToken`. **userType** wird
+    weggelassen (xmcl-Default `msa`; nur Microsoft-Accounts). Heap aus
     `settings.maxMemoryMb`.
   - `createMinecraftProcessWatcher` → Events als `launch:status`
     (`launching`/`running`/`exited`/`error`, inkl. Exit-Code & Crash-Report).

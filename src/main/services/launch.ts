@@ -128,8 +128,7 @@ export async function launchInstance(
     javaPath,
     gameProfile: { name: auth.name, id: auth.uuid },
     accessToken: auth.accessToken,
-    // Microsoft-Accounts: userType weglassen -> @xmcl-Default `msa`.
-    ...(auth.userType === 'legacy' ? { userType: 'legacy' as const } : {}),
+    // Nur Microsoft-Accounts -> userType weglassen, @xmcl-Default ist `msa`.
     maxMemory: settings.maxMemoryMb,
     minMemory: Math.min(512, settings.maxMemoryMb),
     launcherName: 'DoodleCraft',

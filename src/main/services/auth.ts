@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto'
 import { Authflow, Titles, type CacheFactory } from 'prismarine-auth'
-import { offline } from '@xmcl/user'
 import type { Account, DeviceCodeInfo } from '@shared/ipc'
 import { store } from '../store'
 import { paths } from '../paths'
@@ -14,7 +13,7 @@ export interface LaunchAuth {
   accessToken: string
   uuid: string
   name: string
-  userType: 'msa' | 'legacy'
+  userType: 'msa'
 }
 
 const PUBLIC_TITLE = Titles.MinecraftNintendoSwitch // öffentliche Client-ID
@@ -31,7 +30,9 @@ function makeFlow(
   return new Authflow(
     cacheKey,
     cacheFactory(),
-    { flow: 'live', authTitle: PUBLIC_TITLE, deviceType: 'Win32' },
+    // deviceType MUSS zum Title passen (Nintendo Switch -> 'Nintendo'),
+    // sonst lehnt Xbox die Title-/Device-Auth mit 403 Forbidden ab.
+    { flow: 'live', authTitle: PUBLIC_TITLE, deviceType: 'Nintendo' },
     (res) => {
       onCode?.({
         userCode: res.user_code,
@@ -45,14 +46,32 @@ function makeFlow(
 
 // --- Account-Persistenz -----------------------------------------------------
 
+/**
+ * Entfernt evtl. aus früheren Versionen noch vorhandene Offline-Accounts und
+ * persistiert das Ergebnis. Offline-Accounts werden nicht mehr unterstützt.
+ */
+function pruneNonMicrosoft(): Account[] {
+  const accounts = store.get('accounts')
+  const microsoft = accounts.filter((a) => a.type === 'microsoft')
+  if (microsoft.length !== accounts.length) {
+    store.set('accounts', microsoft)
+    const active = store.get('activeAccountId')
+    if (!microsoft.some((a) => a.id === active)) {
+      store.set('activeAccountId', microsoft[0]?.id ?? null)
+    }
+  }
+  return microsoft
+}
+
 export function listAccounts(): Account[] {
-  return store.get('accounts')
+  return pruneNonMicrosoft()
 }
 
 export function getActiveAccount(): Account | null {
+  const accounts = pruneNonMicrosoft()
   const id = store.get('activeAccountId')
   if (!id) return null
-  return store.get('accounts').find((a) => a.id === id) ?? null
+  return accounts.find((a) => a.id === id) ?? null
 }
 
 export function setActiveAccount(accountId: string): Account[] {
@@ -124,41 +143,13 @@ export async function loginMicrosoft(
   return account
 }
 
-/** Legt einen Offline-Account an (nur Singleplayer/Offline-Server). */
-export function addOfflineAccount(name: string): Account {
-  const trimmed = name.trim()
-  if (!/^[A-Za-z0-9_]{3,16}$/.test(trimmed)) {
-    throw new Error('Ungültiger Name (3–16 Zeichen: Buchstaben, Zahlen, _).')
-  }
-  const session = offline(trimmed)
-  const account: Account = {
-    id: `offline:${session.selectedProfile.id}`,
-    type: 'offline',
-    name: session.selectedProfile.name,
-    uuid: session.selectedProfile.id,
-    addedAt: Date.now()
-  }
-  upsertAccount(account)
-  return account
-}
-
 /**
- * Liefert einen frischen Spiel-Token für den Start. Bei Microsoft-Accounts
- * wird das Token bei Bedarf still über den verschlüsselten Cache erneuert.
+ * Liefert einen frischen Spiel-Token für den Start. Das Token wird bei Bedarf
+ * still über den verschlüsselten Cache erneuert.
  */
 export async function getLaunchAuth(accountId: string): Promise<LaunchAuth> {
   const account = store.get('accounts').find((a) => a.id === accountId)
   if (!account) throw new Error('Account nicht gefunden.')
-
-  if (account.type === 'offline') {
-    const session = offline(account.name)
-    return {
-      accessToken: session.accessToken,
-      uuid: account.uuid,
-      name: account.name,
-      userType: 'legacy'
-    }
-  }
 
   const flow = makeFlow(account.id)
   const result = await flow.getMinecraftJavaToken({ fetchProfile: true })

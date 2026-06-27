@@ -4,17 +4,15 @@ import { useAccounts } from '../store/accounts'
 import DoodleCard from '../components/DoodleCard'
 import SkinHead from '../components/SkinHead'
 import DeviceCodeDialog from '../components/DeviceCodeDialog'
-import { WiredButton, WiredInput } from '../components/wired'
+import { WiredButton } from '../components/wired'
 
 export default function Accounts(): JSX.Element {
-  const { accounts, activeId, loaded, refresh, setActive, remove, addOffline, loginMicrosoft } =
+  const { accounts, activeId, loaded, refresh, setActive, remove, loginMicrosoft } =
     useAccounts()
 
   const [busy, setBusy] = useState(false)
   const [code, setCode] = useState<DeviceCodeInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [offlineName, setOfflineName] = useState('')
-  const [offlineError, setOfflineError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loaded) refresh()
@@ -36,16 +34,6 @@ export default function Accounts(): JSX.Element {
     }
   }
 
-  const handleOffline = async (): Promise<void> => {
-    setOfflineError(null)
-    try {
-      await addOffline(offlineName)
-      setOfflineName('')
-    } catch (e) {
-      setOfflineError(e instanceof Error ? e.message : String(e))
-    }
-  }
-
   const closeDialog = (): void => {
     setError(null)
     setCode(null)
@@ -56,7 +44,6 @@ export default function Accounts(): JSX.Element {
       <h1>Accounts</h1>
       <p style={{ color: 'var(--ink-soft)', marginTop: -8 }}>
         Melde dich mit deinem Microsoft-Account an — ganz ohne eigene Azure-App.
-        Offline-Accounts funktionieren nur für Singleplayer/Offline-Server.
       </p>
 
       <DoodleCard title="Account hinzufügen">
@@ -65,18 +52,6 @@ export default function Accounts(): JSX.Element {
             {busy ? 'Anmeldung läuft …' : '＋ Microsoft-Login'}
           </WiredButton>
         </div>
-
-        <div className="row" style={{ marginTop: 16 }}>
-          <WiredInput
-            value={offlineName}
-            placeholder="Offline-Name (3–16)"
-            onValueChange={setOfflineName}
-          />
-          <WiredButton onClick={handleOffline}>＋ Offline</WiredButton>
-        </div>
-        {offlineError && (
-          <p style={{ color: 'var(--danger)', marginTop: 8 }}>{offlineError}</p>
-        )}
       </DoodleCard>
 
       <DoodleCard title={`Gespeicherte Accounts (${accounts.length})`}>
@@ -94,9 +69,7 @@ export default function Accounts(): JSX.Element {
                 <SkinHead uuid={a.uuid} name={a.name} />
                 <div className="account-row__info">
                   <span className="account-row__name">{a.name}</span>
-                  <span className="doodle-chip">
-                    {a.type === 'microsoft' ? 'Microsoft' : 'Offline'}
-                  </span>
+                  <span className="doodle-chip">Microsoft</span>
                 </div>
                 <div className="row">
                   {a.id === activeId ? (

@@ -20,7 +20,7 @@ export interface AppInfo {
 // Auth / Accounts
 // ---------------------------------------------------------------------------
 
-export type AccountType = 'microsoft' | 'offline'
+export type AccountType = 'microsoft'
 
 export interface Account {
   /** Interne, stabile ID (bei Microsoft zugleich der prismarine-auth Cache-Key). */
@@ -212,10 +212,6 @@ export interface IpcInvokeMap {
   /** Startet den Microsoft Device-Code-Login. Löst mit dem neuen Account auf. */
   'auth:loginMicrosoft': {
     args: []
-    result: Account
-  }
-  'auth:addOffline': {
-    args: [name: string]
     result: Account
   }
 

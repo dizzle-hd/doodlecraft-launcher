@@ -31,7 +31,8 @@ npm run package      # Windows-Installer/Portable (release/)
 
 ## Status
 
-Siehe Meilensteine M1–M8. Aktuell: **M1 — Scaffold & Fenster**.
+Siehe Meilensteine M1–M8. Aktuell fertig: **M1–M4** (Scaffold, Design-System,
+Auth, Versionen & Instanzen). Als Nächstes: **M5 — Spielstart**.
 
 ## Hinweis zum Login
 

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import AppShell, { type NavItem } from './components/AppShell'
 import Gallery from './pages/Gallery'
 import Accounts from './pages/Accounts'
+import Instances from './pages/Instances'
+import Play from './pages/Play'
 import SkinHead from './components/SkinHead'
 import { useAccounts } from './store/accounts'
 
@@ -14,11 +16,11 @@ const NAV: NavItem[] = [
 ]
 
 /**
- * App-Wurzel. Accounts (M3) und das Design-System (M2) sind live; die übrigen
- * Seiten folgen in späteren Meilensteinen.
+ * App-Wurzel. Spielen/Instanzen (M4), Accounts (M3) und das Design-System (M2)
+ * sind live; die übrigen Seiten folgen in späteren Meilensteinen.
  */
 export default function App(): JSX.Element {
-  const [active, setActive] = useState('accounts')
+  const [active, setActive] = useState('play')
   const { accounts, activeId, refresh } = useAccounts()
   const current = accounts.find((a) => a.id === activeId) ?? null
 
@@ -48,11 +50,13 @@ export default function App(): JSX.Element {
         </button>
       }
     >
+      {active === 'play' && <Play />}
+      {active === 'instances' && <Instances />}
       {active === 'gallery' && <Gallery />}
       {active === 'accounts' && <Accounts />}
-      {active !== 'gallery' && active !== 'accounts' && (
+      {active === 'settings' && (
         <div className="stack">
-          <h1>{NAV.find((n) => n.id === active)?.label}</h1>
+          <h1>Einstellungen</h1>
           <p style={{ color: 'var(--ink-soft)' }}>
             Diese Seite folgt in einem späteren Meilenstein.
           </p>

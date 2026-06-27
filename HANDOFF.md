@@ -20,14 +20,14 @@ Der vollständige Original-Plan liegt unter
 | **M1** | Scaffold, sichere Electron-Defaults, IPC-Gerüst | ✅ fertig & verifiziert |
 | **M2** | Drawing-Style Design-System (wired-elements, RoughJS, Fonts) | ✅ fertig & verifiziert |
 | **M3** | Auth: MS Device-Code (öffentl. Client-ID) + Offline + Multi-Account | ✅ fertig & verifiziert |
-| **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | 🚧 **HIER WEITERMACHEN** |
-| M5 | Spielstart (@xmcl/core) | ⬜ offen |
+| **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | ✅ fertig (build/typecheck grün; Download-Verifikation nur außerhalb dieser Sandbox möglich) |
+| M5 | Spielstart (@xmcl/core) | 🚧 **HIER WEITERMACHEN** |
 | M6 | Mod-Loader (Fabric/Forge/Quilt) | ⬜ offen |
 | M7 | Mods & Modpacks (Modrinth/CurseForge) | ⬜ offen |
 | M8 | Politur & Windows-Build | ⬜ offen |
 
-Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M3 completed,
-M4 in_progress.
+Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M4 completed,
+M5 in_progress.
 
 ## So läuft das Projekt
 
@@ -77,9 +77,13 @@ src/
       registry.ts          # handle()/emit() typsichere Wrapper; handle gibt ctx={sender}
       index.ts             # registerIpcHandlers() — hier neue Handler-Module einhängen
       auth.ts              # Auth-IPC-Handler
+      instances.ts         # IPC für settings/versions/instances (M4)
     services/
       encryptedCache.ts    # prismarine-auth Cache-Factory, verschlüsselt via safeStorage
       auth.ts              # AccountManager + Login-Flows + getLaunchAuth() (für M5!)
+      versions.ts          # Mojang-Versionsliste (getVersionList) + In-Memory-Cache (M4)
+      instances.ts         # Instanz-CRUD: list/create/delete/duplicate + patchInstance (M4)
+      install.ts           # Vanilla-Install (installTask) + Java-Runtime + Fortschritts-Events (M4)
   preload/
     index.ts               # contextBridge -> window.api.invoke()/on() (generisch, getypt)
     index.d.ts             # Window.api Typ
@@ -98,7 +102,10 @@ src/
       pages/
         Gallery.tsx        # Design-System-Demo (Nav „Design-System")
         Accounts.tsx       # M3 Account-Verwaltung
+        Instances.tsx      # M4 Instanz-Liste + Anlegen + Install-Fortschritt
+        Play.tsx           # M4 Start-Seite (Spielen-Button kommt in M5)
       store/accounts.ts    # zustand-Store, spiegelt Main-Auth
+      store/instances.ts   # zustand-Store: Instanzen/Versionen/Settings + Install-Progress
       styles/
         theme.css          # Tokens + @fontsource imports
         global.css
@@ -131,49 +138,50 @@ src/
    `@xmcl/user@^3.0.3`. (Achtung: höhere Majors existieren nicht — `^2.18` schlug fehl.)
 5. **Kein React-Router** — simpler `active`-State in `App.tsx`. Bei Bedarf ausbauen.
 
-## 👉 Nächster Schritt: M4 implementieren
+## ✅ M4 erledigt — so funktioniert es
 
-Ziel: Vanilla-Version herunterladen, Instanzen verwalten, Java bereitstellen.
-`@xmcl/core` + `@xmcl/installer` sind **bereits installiert** (aber noch ungenutzt).
+Versionen, Instanzen, Vanilla-Download und Java-Provisioning sind implementiert.
 
-Konkrete To-dos:
+- **`services/versions.ts`** — `getVersionList()` aus `@xmcl/installer`, 30-min
+  In-Memory-Cache. `listVersions()` filtert Snapshots gemäß Setting `showSnapshots`
+  und liefert zusätzlich `latestRelease`/`latestSnapshot`. `getVersionMeta(id)`
+  zieht `{ id, url }` für den Download.
+- **`services/instances.ts`** — Instanz = Ordner `paths.instances/<slug>/` mit
+  `instance.json`. `id` == Slug == Ordnername (aus Name abgeleitet, eindeutig).
+  CRUD: `listInstances/createInstance/deleteInstance/duplicateInstance` plus
+  `patchInstance` (für `installed`, `lastPlayed`, `javaComponent`). Path-Traversal
+  ist über eine Slug-Regex abgesichert.
+- **`services/install.ts`** — `installTask()` nach `paths.minecraft` (shared,
+  `side: 'client'`). Fortschritt des **Root-Tasks** (`task.progress/task.total`)
+  wird gedrosselt als `emit(sender, 'install:progress', { instanceId, phase,
+  progress, label })` gepusht (Phasen `minecraft` → `java` → `done`/`error`).
+  Java: aus `resolved.javaVersion.component` die passende Mojang-Runtime per
+  `fetchJavaRuntimeManifest` + `installJavaRuntimeTask` nach `paths.java/<component>`
+  (raw, `lzma: false` → kein Entpacker nötig). Java-Fehler sind **nicht fatal**.
+- **IPC** (`ipc/instances.ts`, in `index.ts` registriert): `settings:get|update`,
+  `versions:list`, `instances:list|create|delete|duplicate|install`. Neues Event
+  `install:progress` in `IpcEventMap`.
+- **Renderer**: `pages/Instances.tsx` (Anlegen mit `WiredCombo`-Versionsauswahl +
+  Snapshot-Toggle, Liste mit `RoughProgressBar`), `pages/Play.tsx` (zuletzt
+  gespielte Instanz + Account, „Spielen"-Button noch deaktiviert), `store/instances.ts`
+  (zustand). `App.tsx` startet jetzt auf „Spielen".
 
-1. **`src/main/services/versions.ts`**
-   - `getVersionList()` aus `@xmcl/installer` → Manifest cachen.
-   - Liste nach Release/Snapshot filtern (Setting `showSnapshots` aus `store`).
+> ⚠️ **Verifikations-Hinweis:** `npm run typecheck` und `npm run build` sind grün.
+> Der **echte Download** ließ sich in der aktuellen Sandbox **nicht** prüfen, weil
+> die Netzwerk-Policy die Mojang-Hosts (`launchermeta.mojang.com` etc.) blockiert
+> (`getVersionList()` → „Host not in allowlist"). In einer Umgebung mit Mojang-Zugriff
+> verifizieren: Instanz mit aktueller Release anlegen → Fortschritt sichtbar →
+> Dateien unter `paths.minecraft` (versions/libraries/assets) + `paths.instances/<slug>/`,
+> Java unter `paths.java/<component>/`.
 
-2. **`src/main/services/instances.ts`**
-   - Instanz = Ordner unter `paths.instances/<slug>/` mit `instance.json`
-     (`{ id, name, mcVersion, loader?, loaderVersion?, createdAt, lastPlayed? }`).
-   - CRUD: list / create / delete / duplicate. Mods/Saves/Configs liegen je Instanz.
+## 👉 Nächster Schritt: M5 (Spielstart) implementieren
 
-3. **`src/main/services/install.ts`**
-   - Vanilla installieren mit `@xmcl/installer` `installTask()`/`install()` in
-     `paths.minecraft` (shared). Fortschritt über einen Task-Listener als
-     `emit(sender, 'install:progress', { instanceId, phase, progress })`.
-   - Neues Event `install:progress` in `IpcEventMap` ergänzen.
-
-4. **Java-Provisioning**
-   - `@xmcl/installer` `installJreFromMojang`/Java-Runtime-API → passende JRE je
-     MC-Version nach `paths.java`. (Kein System-Java vorhanden!) Pfad merken für M5.
-
-5. **IPC** (`src/main/ipc/instances.ts`, in `index.ts` registrieren):
-   `versions:list`, `instances:list|create|delete|duplicate`, `instances:install`.
-
-6. **Renderer**
-   - `pages/Instances.tsx`: Liste (DoodleCards), „Neue Instanz" (Name + Versions-Combo
-     via `WiredCombo`), Install-Fortschritt mit `RoughProgressBar`
-     (`window.api.on('install:progress', ...)`).
-   - `pages/Play.tsx`: aktive Instanz + großer „Spielen"-Button (Start kommt in M5).
-   - `store/instances.ts` (zustand) analog zu `store/accounts.ts`.
-   - In `App.tsx` Nav `instances` und `play` verdrahten.
-
-**M4-Verifikation:** Instanz mit aktueller Release anlegen → Download-Fortschritt
-sichtbar → Dateien liegen unter `paths.minecraft` (versions/libraries/assets) und
-`paths.instances/<slug>/`. Java liegt unter `paths.java`.
-
-**Danach M5 (Start):** `getLaunchAuth(accountId)` aus `services/auth.ts` nutzen
-(liefert `accessToken/uuid/name/userType`), Spielstart mit `@xmcl/core` `launch()`.
+`getLaunchAuth(accountId)` aus `services/auth.ts` nutzen (liefert
+`accessToken/uuid/name/userType`), Spielstart mit `@xmcl/core` `launch()`.
+Java-Binary aus `paths.java/<instance.javaComponent>/` auflösen (siehe
+`findJavaBinary()` in `services/install.ts`), Heap aus `settings.maxMemoryMb`.
+Den „Spielen"-Button in `pages/Play.tsx` aktivieren und nach Start
+`patchInstance(id, { lastPlayed: Date.now() })` setzen.
 
 ## Verifikations-Werkzeuge (bewährt)
 

@@ -1,14 +1,5 @@
 import Store from 'electron-store'
-import type { Account } from '@shared/ipc'
-
-export interface LauncherSettings {
-  /** Maximaler Java-Heap in MB. */
-  maxMemoryMb: number
-  /** Optionaler manueller Java-Pfad (leer = automatisch beschaffen). */
-  javaPath: string
-  /** Snapshots in der Versionsliste anzeigen. */
-  showSnapshots: boolean
-}
+import type { Account, LauncherSettings } from '@shared/ipc'
 
 interface StoreSchema {
   accounts: Account[]
@@ -32,3 +23,15 @@ const defaults: StoreSchema = {
  * services/encryptedCache.ts).
  */
 export const store = new Store<StoreSchema>({ defaults })
+
+/** Aktuelle Einstellungen. */
+export function getSettings(): LauncherSettings {
+  return store.get('settings')
+}
+
+/** Teil-Update der Einstellungen; liefert den neuen Stand. */
+export function updateSettings(patch: Partial<LauncherSettings>): LauncherSettings {
+  const next = { ...store.get('settings'), ...patch }
+  store.set('settings', next)
+  return next
+}

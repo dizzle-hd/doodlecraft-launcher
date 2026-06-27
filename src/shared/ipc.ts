@@ -43,6 +43,72 @@ export interface DeviceCodeInfo {
 }
 
 // ---------------------------------------------------------------------------
+// Einstellungen
+// ---------------------------------------------------------------------------
+
+export interface LauncherSettings {
+  /** Maximaler Java-Heap in MB. */
+  maxMemoryMb: number
+  /** Optionaler manueller Java-Pfad (leer = automatisch beschaffen). */
+  javaPath: string
+  /** Snapshots in der Versionsliste anzeigen. */
+  showSnapshots: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Versionen & Instanzen
+// ---------------------------------------------------------------------------
+
+/** Kompakter Eintrag der Mojang-Versionsliste (für die Auswahl-Combo). */
+export interface VersionSummary {
+  id: string
+  /** z. B. `release`, `snapshot`, `old_beta`. */
+  type: string
+  releaseTime: string
+}
+
+export interface VersionList {
+  latestRelease: string
+  latestSnapshot: string
+  versions: VersionSummary[]
+}
+
+/** Eine Spiel-Instanz (eigener Ordner unter paths.instances/<id>/). */
+export interface Instance {
+  /** Stabiler Slug = zugleich der Ordnername. */
+  id: string
+  name: string
+  mcVersion: string
+  /** Mod-Loader (M6). Noch ungenutzt, aber im Schema vorgesehen. */
+  loader?: 'fabric' | 'forge' | 'quilt'
+  loaderVersion?: string
+  /** Mojang-Java-Komponente, die für den Start gebraucht wird (z. B. java-runtime-gamma). */
+  javaComponent?: string
+  /** true, sobald Vanilla-Dateien vollständig installiert sind. */
+  installed: boolean
+  createdAt: number
+  lastPlayed?: number
+}
+
+export interface CreateInstanceInput {
+  name: string
+  mcVersion: string
+}
+
+/** Fortschritts-Push während einer Installation. */
+export interface InstallProgress {
+  instanceId: string
+  /** Aktuelle Phase des Vorgangs. */
+  phase: 'minecraft' | 'java' | 'done' | 'error'
+  /** 0..1. */
+  progress: number
+  /** Menschliche Kurzbeschreibung (z. B. aktueller Task-Pfad). */
+  label?: string
+  /** Nur bei `phase === 'error'`. */
+  error?: string
+}
+
+// ---------------------------------------------------------------------------
 
 /** Renderer -> Main (invoke), Schlüssel = Channel-Name. */
 export interface IpcInvokeMap {
@@ -80,11 +146,52 @@ export interface IpcInvokeMap {
     args: [name: string]
     result: Account
   }
+
+  'settings:get': {
+    args: []
+    result: LauncherSettings
+  }
+  'settings:update': {
+    args: [patch: Partial<LauncherSettings>]
+    result: LauncherSettings
+  }
+
+  /** Mojang-Versionsliste (gefiltert nach Setting `showSnapshots`). */
+  'versions:list': {
+    args: []
+    result: VersionList
+  }
+
+  'instances:list': {
+    args: []
+    result: Instance[]
+  }
+  'instances:create': {
+    args: [input: CreateInstanceInput]
+    result: Instance
+  }
+  'instances:delete': {
+    args: [instanceId: string]
+    result: Instance[]
+  }
+  'instances:duplicate': {
+    args: [instanceId: string]
+    result: Instance[]
+  }
+  /**
+   * Installiert (oder vervollständigt) Vanilla + passende Java-Runtime der
+   * Instanz. Fortschritt kommt über das Event `install:progress`.
+   */
+  'instances:install': {
+    args: [instanceId: string]
+    result: Instance
+  }
 }
 
 /** Main -> Renderer (Push-Events), Schlüssel = Channel-Name. */
 export interface IpcEventMap {
   'auth:deviceCode': DeviceCodeInfo
+  'install:progress': InstallProgress
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

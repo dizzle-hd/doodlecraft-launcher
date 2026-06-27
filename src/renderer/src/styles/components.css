@@ -194,6 +194,45 @@
   padding: 0 6px;
 }
 
+/* --- Instanzen --- */
+.instance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.instance-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1.5px dashed var(--paper-edge);
+}
+.instance-row:last-child {
+  border-bottom: none;
+}
+.instance-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+.instance-row__name {
+  font-size: 1.15rem;
+}
+.instance-row__progress {
+  flex: 1 0 100%;
+  margin-top: 4px;
+}
+
+/* --- Play --- */
+.play-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 /* --- Modal / Device-Code --- */
 .modal-overlay {
   position: fixed;

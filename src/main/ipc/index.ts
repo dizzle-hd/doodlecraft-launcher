@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { handle } from './registry'
 import { registerAuthHandlers } from './auth'
+import { registerInstanceHandlers } from './instances'
 
 /**
  * Registriert alle IPC-Handler. Pro Meilenstein kommen hier weitere
@@ -16,4 +17,5 @@ export function registerIpcHandlers(): void {
   handle('app:ping', (_ctx, message) => `pong: ${message}`)
 
   registerAuthHandlers()
+  registerInstanceHandlers()
 }

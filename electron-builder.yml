@@ -16,3 +16,9 @@ nsis:
   allowToChangeInstallationDirectory: true
   installerIcon: resources/icon.ico
   uninstallerIcon: resources/icon.ico
+linux:
+  icon: resources/icon.png
+  category: Game
+  synopsis: Minecraft-Launcher im Drawing-Style
+  target:
+    - AppImage

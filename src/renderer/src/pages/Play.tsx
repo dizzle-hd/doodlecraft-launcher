@@ -18,17 +18,7 @@ export default function Play({
 }: {
   onNavigate: (id: string) => void
 }): JSX.Element {
-  const {
-    instances,
-    loaded,
-    progress,
-    launchStatus,
-    refresh,
-    install,
-    launch,
-    setProgress,
-    setLaunchStatus
-  } = useInstances()
+  const { instances, loaded, progress, launchStatus, refresh, play } = useInstances()
   const { accounts, activeId, refresh: refreshAccounts } = useAccounts()
 
   const [selectedId, setSelectedId] = useState('')
@@ -37,13 +27,7 @@ export default function Play({
   useEffect(() => {
     if (!loaded) refresh()
     refreshAccounts()
-    const offP = window.api.on('install:progress', setProgress)
-    const offL = window.api.on('launch:status', setLaunchStatus)
-    return () => {
-      offP()
-      offL()
-    }
-  }, [loaded, refresh, refreshAccounts, setProgress, setLaunchStatus])
+  }, [loaded, refresh, refreshAccounts])
 
   useEffect(() => {
     if (!selectedId && instances.length > 0) setSelectedId(instances[0].id)
@@ -66,8 +50,7 @@ export default function Play({
     }
     setError(null)
     try {
-      if (!current.installed) await install(current.id)
-      await launch(current.id)
+      await play(current.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }

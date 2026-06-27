@@ -7,9 +7,10 @@ import type {
   ModSearchHit
 } from '@shared/ipc'
 import { useInstances } from '../store/instances'
-import { Button, Chip, IconButton, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
+import { Button, Chip, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
 import Icon from '../components/icons'
 import { InstanceIcon, IconPicker } from '../components/InstanceIcon'
+import InstanceDetail from '../components/InstanceDetail'
 
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft',
@@ -27,35 +28,14 @@ const LOADER_OPTS = [
 ]
 
 export default function Instances(): JSX.Element {
-  const store = useInstances()
-  const {
-    instances,
-    loaded,
-    progress,
-    launchStatus,
-    refresh,
-    remove,
-    duplicate,
-    rename,
-    setIcon,
-    openFolder,
-    install,
-    launch,
-    setProgress,
-    setLaunchStatus
-  } = store
+  const { instances, loaded, progress, launchStatus, refresh, play } = useInstances()
 
   const [creating, setCreating] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loaded) refresh()
-    const offP = window.api.on('install:progress', setProgress)
-    const offL = window.api.on('launch:status', setLaunchStatus)
-    return () => {
-      offP()
-      offL()
-    }
-  }, [loaded, refresh, setProgress, setLaunchStatus])
+  }, [loaded, refresh])
 
   return (
     <div className="stack">
@@ -78,19 +58,21 @@ export default function Instances(): JSX.Element {
               instance={inst}
               progress={progress[inst.id]}
               launchState={launchStatus[inst.id]?.state}
-              onInstall={() => install(inst.id)}
-              onLaunch={() => launch(inst.id)}
-              onDuplicate={() => duplicate(inst.id)}
-              onRemove={() => remove(inst.id)}
-              onRename={(name) => rename(inst.id, name)}
-              onSetIcon={(icon) => setIcon(inst.id, icon)}
-              onOpenFolder={() => openFolder(inst.id)}
+              onOpen={() => setDetailId(inst.id)}
+              onPlay={() => play(inst.id)}
             />
           ))}
         </div>
       )}
 
       {creating && <CreateInstanceModal onClose={() => setCreating(false)} />}
+      {detailId && (
+        <InstanceDetail
+          instanceId={detailId}
+          onClose={() => setDetailId(null)}
+          onPlay={(id) => play(id)}
+        />
+      )}
     </div>
   )
 }
@@ -101,68 +83,30 @@ interface CardProps {
   instance: Instance
   progress?: InstallProgress
   launchState?: 'launching' | 'running' | 'exited' | 'error'
-  onInstall: () => void
-  onLaunch: () => void
-  onDuplicate: () => void
-  onRemove: () => void
-  onRename: (name: string) => void
-  onSetIcon: (icon: string) => void
-  onOpenFolder: () => void
+  onOpen: () => void
+  onPlay: () => void
 }
 
 function InstanceCard({
   instance,
   progress,
   launchState,
-  onInstall,
-  onLaunch,
-  onDuplicate,
-  onRemove,
-  onRename,
-  onSetIcon,
-  onOpenFolder
+  onOpen,
+  onPlay
 }: CardProps): JSX.Element {
   const installing =
     progress !== undefined && progress.phase !== 'done' && progress.phase !== 'error'
   const running = launchState === 'launching' || launchState === 'running'
   const busy = installing || running
 
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(instance.name)
-  const [picking, setPicking] = useState(false)
-
-  const commit = (): void => {
-    const t = draft.trim()
-    if (t && t !== instance.name) onRename(t)
-    setEditing(false)
-  }
-
   return (
-    <div className="instance-card">
+    <div className="instance-card instance-card--clickable" onClick={onOpen}>
       <div className="instance-card__top">
-        <button
-          className="instance-card__icon instance-card__icon--btn"
-          title="Icon ändern"
-          onClick={() => setPicking(true)}
-        >
+        <div className="instance-card__icon">
           <InstanceIcon icon={instance.icon} size={28} />
-        </button>
-        {picking && (
-          <IconPicker
-            current={instance.icon}
-            onPick={(icon) => {
-              onSetIcon(icon)
-              setPicking(false)
-            }}
-            onClose={() => setPicking(false)}
-          />
-        )}
+        </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          {editing ? (
-            <Input value={draft} onChange={setDraft} onEnter={commit} full />
-          ) : (
-            <div className="instance-card__name">{instance.name}</div>
-          )}
+          <div className="instance-card__name">{instance.name}</div>
           <div className="instance-card__meta">
             <Chip>{instance.mcVersion}</Chip>
             {instance.loader && <Chip>{instance.loader}</Chip>}
@@ -195,42 +139,20 @@ function InstanceCard({
         </div>
       )}
 
-      <div className="instance-card__actions">
-        {instance.installed && (
-          <Button variant="primary" small onClick={onLaunch} disabled={busy} full>
-            {running ? '▶ läuft …' : '▶ Spielen'}
-          </Button>
-        )}
-        <Button small onClick={onInstall} disabled={busy} full={!instance.installed}>
-          {installing ? 'läuft …' : instance.installed ? 'Reparieren' : '⤓ Installieren'}
+      <div
+        className="instance-card__actions"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Button variant="primary" small full disabled={busy} onClick={onPlay}>
+          {installing
+            ? 'läuft …'
+            : running
+              ? '▶ läuft …'
+              : instance.installed
+                ? '▶ Spielen'
+                : '⤓ Installieren & Spielen'}
         </Button>
       </div>
-
-      {editing ? (
-        <div className="instance-card__more">
-          <Button small variant="primary" onClick={commit}>
-            OK
-          </Button>
-          <Button small variant="ghost" onClick={() => setEditing(false)}>
-            Abbrechen
-          </Button>
-        </div>
-      ) : (
-        <div className="instance-card__more">
-          <IconButton title="Umbenennen" onClick={() => setEditing(true)}>
-            <Icon name="edit" size={17} />
-          </IconButton>
-          <IconButton title="Ordner öffnen" onClick={onOpenFolder}>
-            <Icon name="folder" size={17} />
-          </IconButton>
-          <IconButton title="Duplizieren" onClick={onDuplicate}>
-            <Icon name="copy" size={17} />
-          </IconButton>
-          <IconButton title="Löschen" danger onClick={onRemove}>
-            <Icon name="trash" size={17} />
-          </IconButton>
-        </div>
-      )}
     </div>
   )
 }

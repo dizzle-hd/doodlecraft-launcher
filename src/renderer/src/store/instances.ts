@@ -28,6 +28,8 @@ interface InstancesState {
   openFolder: (id: string) => Promise<void>
   install: (id: string) => Promise<void>
   launch: (id: string) => Promise<void>
+  /** Installiert bei Bedarf und startet danach. */
+  play: (id: string) => Promise<void>
   setProgress: (p: InstallProgress) => void
   setLaunchStatus: (s: LaunchStatus) => void
 }
@@ -129,6 +131,18 @@ export const useInstances = create<InstancesState>((set, get) => {
       } finally {
         await reload()
       }
+    },
+
+    play: async (id) => {
+      const inst = get().instances.find((i) => i.id === id)
+      if (inst && !inst.installed) {
+        await window.api.invoke('instances:install', id)
+        await reload()
+        const { [id]: _done, ...rest } = get().progress
+        set({ progress: rest })
+      }
+      await window.api.invoke('instances:launch', id)
+      await reload()
     },
 
     setProgress: (p) => {

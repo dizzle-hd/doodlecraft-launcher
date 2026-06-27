@@ -1066,3 +1066,111 @@
   font-size: 0.9rem;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
+
+/* ===================== Doodle-Stil (gezeichneter Look) ===================== */
+/* Unregelmäßige „handgezeichnete" Rundungen + dicke Tinten-Ränder. */
+[data-style='doodle'] .card,
+[data-style='doodle'] .instance-card,
+[data-style='doodle'] .mod-row,
+[data-style='doodle'] .modal,
+[data-style='doodle'] .play-stage,
+[data-style='doodle'] .skin-stage--solo,
+[data-style='doodle'] .log-view,
+[data-style='doodle'] .empty {
+  border-width: 2.5px;
+  border-style: solid;
+  border-color: var(--border);
+  border-radius: 255px 14px 225px 14px / 14px 225px 14px 255px;
+}
+[data-style='doodle'] .card,
+[data-style='doodle'] .instance-card {
+  box-shadow: var(--shadow-sm);
+}
+[data-style='doodle'] .instance-card:hover {
+  box-shadow: var(--shadow);
+}
+
+[data-style='doodle'] .btn,
+[data-style='doodle'] .field,
+[data-style='doodle'] .select select,
+[data-style='doodle'] .account-pill,
+[data-style='doodle'] .tabs,
+[data-style='doodle'] .tab {
+  border-width: 2.5px;
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: 16px 6px 18px 7px / 7px 16px 6px 18px;
+}
+[data-style='doodle'] .btn {
+  box-shadow: var(--shadow-sm);
+}
+[data-style='doodle'] .btn:not(:disabled):active {
+  box-shadow: none;
+  transform: translate(2px, 3px);
+}
+[data-style='doodle'] .btn--ghost {
+  border-color: transparent;
+  box-shadow: none;
+}
+[data-style='doodle'] .btn--primary {
+  box-shadow: var(--shadow-sm);
+}
+
+[data-style='doodle'] .chip {
+  border-width: 2px;
+  border-color: var(--border);
+  border-radius: 20px 8px 18px 9px / 9px 18px 8px 20px;
+}
+[data-style='doodle'] .icon-btn {
+  border: 2px solid transparent;
+  border-radius: 14px 6px 12px 7px / 7px 12px 6px 14px;
+}
+[data-style='doodle'] .icon-btn:hover {
+  border-color: var(--border);
+}
+
+[data-style='doodle'] .nav-item {
+  border: 2px solid transparent;
+  border-radius: 16px 7px 14px 8px / 8px 14px 7px 16px;
+  font-weight: 400;
+  font-size: 1.04rem;
+}
+[data-style='doodle'] .nav-item.is-active {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--accent);
+}
+
+[data-style='doodle'] .instance-card__icon,
+[data-style='doodle'] .mod-row__icon {
+  border: 2.5px solid var(--border);
+  border-radius: 16px 6px 14px 7px / 7px 14px 6px 16px;
+}
+
+[data-style='doodle'] .play-pill {
+  border-width: 2.5px;
+  border-radius: 40px 16px 44px 16px / 16px 40px 16px 44px;
+}
+[data-style='doodle'] .play-pill__play {
+  border: 2.5px solid var(--border-strong);
+  border-radius: 30px 12px 34px 12px / 12px 30px 12px 34px;
+}
+
+[data-style='doodle'] .device-code {
+  border-width: 2.5px;
+  border-radius: 18px 7px 20px 8px / 8px 20px 7px 18px;
+}
+
+/* Akzentpunkte/Emoji-Zellen leicht „skizzig" */
+[data-style='doodle'] .emoji-cell,
+[data-style='doodle'] .theme-card {
+  border-width: 2.5px;
+  border-radius: 18px 8px 16px 9px / 9px 16px 8px 18px;
+}
+
+.instance-card--clickable {
+  cursor: pointer;
+}
+.instance-card--clickable:active {
+  transform: translateY(-1px);
+}

@@ -20,6 +20,16 @@ export default function Logs(): JSX.Element {
     if (!instanceId && instances.length > 0) setInstanceId(instances[0].id)
   }, [instances, instanceId])
 
+  // Bevorzugt die gerade laufende/startende Instanz anzeigen.
+  useEffect(() => {
+    const runningId = Object.keys(launchStatus).find(
+      (id) =>
+        launchStatus[id]?.state === 'launching' || launchStatus[id]?.state === 'running'
+    )
+    if (runningId && runningId !== instanceId) setInstanceId(runningId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchStatus])
+
   useEffect(() => {
     activeId.current = instanceId
     if (!instanceId) {

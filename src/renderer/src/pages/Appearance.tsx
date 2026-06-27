@@ -1,8 +1,13 @@
-import { useTheme, type ThemeId, type AccentId } from '../store/theme'
+import { useTheme, type ThemeId, type StyleId, type AccentId } from '../store/theme'
 
-const THEMES: { id: ThemeId; name: string; swatch: string }[] = [
-  { id: 'dark', name: 'Dunkel', swatch: 'linear-gradient(135deg,#1e2127,#14161a)' },
-  { id: 'light', name: 'Hell', swatch: 'linear-gradient(135deg,#ffffff,#e7ebf0)' }
+const STYLES: { id: StyleId; name: string; desc: string }[] = [
+  { id: 'doodle', name: 'Doodle', desc: 'Handgezeichneter Stil' },
+  { id: 'minimal', name: 'Minimal', desc: 'Cleaner, moderner Look' }
+]
+
+const MODES: { id: ThemeId; name: string; swatch: string }[] = [
+  { id: 'dark', name: 'Dunkel', swatch: 'linear-gradient(135deg,#26201a,#181513)' },
+  { id: 'light', name: 'Hell', swatch: 'linear-gradient(135deg,#fffdf5,#ece5d3)' }
 ]
 
 const ACCENTS: { id: AccentId; name: string; color: string }[] = [
@@ -16,7 +21,7 @@ const ACCENTS: { id: AccentId; name: string; color: string }[] = [
 ]
 
 export default function Appearance(): JSX.Element {
-  const { theme, setTheme, accent, setAccent } = useTheme()
+  const { theme, setTheme, style, setStyle, accent, setAccent } = useTheme()
 
   return (
     <div className="stack">
@@ -24,18 +29,49 @@ export default function Appearance(): JSX.Element {
         <h1>Design</h1>
       </div>
 
-      <h3>Modus</h3>
+      <h3>Stil</h3>
       <div className="theme-grid">
-        {THEMES.map((t) => (
+        {STYLES.map((s) => (
           <div
-            key={t.id}
-            className={`theme-card ${theme === t.id ? 'is-active' : ''}`}
-            onClick={() => setTheme(t.id)}
+            key={s.id}
+            className={`theme-card ${style === s.id ? 'is-active' : ''}`}
+            onClick={() => setStyle(s.id)}
           >
-            <div className="theme-card__swatch" style={{ background: t.swatch }} />
+            <div
+              className="theme-card__swatch"
+              style={{
+                display: 'grid',
+                placeItems: 'center',
+                fontFamily: s.id === 'doodle' ? 'var(--font-display)' : 'var(--font-sans)',
+                fontSize: '1.5rem',
+                color: 'var(--accent)'
+              }}
+            >
+              {s.id === 'doodle' ? '✎ Aa' : 'Aa'}
+            </div>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <strong>{t.name}</strong>
-              {theme === t.id && <span style={{ color: 'var(--accent)' }}>✓</span>}
+              <strong>{s.name}</strong>
+              {style === s.id && <span style={{ color: 'var(--accent)' }}>✓</span>}
+            </div>
+            <span className="muted" style={{ fontSize: '0.82rem' }}>
+              {s.desc}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={{ marginTop: 8 }}>Modus</h3>
+      <div className="theme-grid">
+        {MODES.map((m) => (
+          <div
+            key={m.id}
+            className={`theme-card ${theme === m.id ? 'is-active' : ''}`}
+            onClick={() => setTheme(m.id)}
+          >
+            <div className="theme-card__swatch" style={{ background: m.swatch }} />
+            <div className="row" style={{ justifyContent: 'space-between' }}>
+              <strong>{m.name}</strong>
+              {theme === m.id && <span style={{ color: 'var(--accent)' }}>✓</span>}
             </div>
           </div>
         ))}

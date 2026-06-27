@@ -14,13 +14,17 @@ body,
 body {
   color: var(--text);
   background: var(--bg);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.5;
   -webkit-user-select: none;
   user-select: none;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+/* Doodle nutzt größere, handgeschriebene Schrift. */
+[data-style='doodle'] body {
+  font-size: 16px;
 }
 
 #root {
@@ -32,10 +36,18 @@ body {
 h1,
 h2,
 h3 {
+  font-family: var(--font-head);
   font-weight: 650;
   margin: 0 0 0.4em;
   letter-spacing: -0.01em;
   color: var(--text);
+}
+[data-style='doodle'] h1,
+[data-style='doodle'] h2,
+[data-style='doodle'] h3 {
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  color: var(--accent);
 }
 
 h1 {

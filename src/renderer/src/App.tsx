@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AppShell, { type NavItem } from './components/AppShell'
 import Icon from './components/icons'
 import Play from './pages/Play'
 import Instances from './pages/Instances'
-import Mods from './pages/Mods'
 import Logs from './pages/Logs'
 import Accounts from './pages/Accounts'
 import Skins from './pages/Skins'
@@ -11,11 +10,11 @@ import Appearance from './pages/Appearance'
 import Settings from './pages/Settings'
 import SkinHead from './components/SkinHead'
 import { useAccounts } from './store/accounts'
+import { useInstances } from './store/instances'
 
 const NAV: NavItem[] = [
   { id: 'play', label: 'Spielen', icon: <Icon name="play" size={18} /> },
   { id: 'instances', label: 'Instanzen', icon: <Icon name="instances" size={18} /> },
-  { id: 'mods', label: 'Mods', icon: <Icon name="mods" size={18} /> },
   { id: 'logs', label: 'Logs', icon: <Icon name="logs" size={18} /> },
   { id: 'accounts', label: 'Accounts', icon: <Icon name="accounts" size={18} /> },
   { id: 'skins', label: 'Skins', icon: <Icon name="skin" size={18} /> },
@@ -26,11 +25,28 @@ const NAV: NavItem[] = [
 export default function App(): JSX.Element {
   const [active, setActive] = useState('play')
   const { accounts, activeId, refresh } = useAccounts()
+  const { setProgress, setLaunchStatus } = useInstances()
   const current = accounts.find((a) => a.id === activeId) ?? null
+  const activeRef = useRef(active)
+  activeRef.current = active
 
   useEffect(() => {
     refresh()
   }, [refresh])
+
+  // Zentrale Abos: Fortschritt/Status app-weit. Beim Spielstart automatisch
+  // zur Logs-Ansicht wechseln, damit man die Spielausgabe sofort sieht.
+  useEffect(() => {
+    const offP = window.api.on('install:progress', setProgress)
+    const offL = window.api.on('launch:status', (s) => {
+      setLaunchStatus(s)
+      if (s.state === 'launching' && activeRef.current !== 'logs') setActive('logs')
+    })
+    return () => {
+      offP()
+      offL()
+    }
+  }, [setProgress, setLaunchStatus])
 
   return (
     <AppShell
@@ -53,7 +69,6 @@ export default function App(): JSX.Element {
       <div className="page-anim" key={active}>
         {active === 'play' && <Play onNavigate={setActive} />}
         {active === 'instances' && <Instances />}
-        {active === 'mods' && <Mods />}
         {active === 'logs' && <Logs />}
         {active === 'accounts' && <Accounts />}
         {active === 'skins' && <Skins />}

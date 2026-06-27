@@ -11,10 +11,7 @@ export default function Appearance(): JSX.Element {
   return (
     <div className="stack">
       <div className="page-head">
-        <div>
-          <h1>Design</h1>
-          <p className="page-sub">Wähle das Erscheinungsbild des Launchers.</p>
-        </div>
+        <h1>Design</h1>
       </div>
 
       <div className="theme-grid">

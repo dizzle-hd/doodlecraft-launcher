@@ -40,12 +40,7 @@ export default function Accounts(): JSX.Element {
   return (
     <div className="stack" style={{ maxWidth: 720 }}>
       <div className="page-head">
-        <div>
-          <h1>Accounts</h1>
-          <p className="page-sub">
-            Melde dich mit deinem Microsoft-Account an — ganz ohne eigene Azure-App.
-          </p>
-        </div>
+        <h1>Accounts</h1>
         <Button variant="primary" onClick={handleMicrosoft} disabled={busy}>
           {busy ? 'Anmeldung läuft …' : '＋ Microsoft-Login'}
         </Button>

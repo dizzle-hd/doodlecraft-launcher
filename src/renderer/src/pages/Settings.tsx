@@ -31,10 +31,7 @@ export default function Settings(): JSX.Element {
   return (
     <div className="stack" style={{ maxWidth: 640 }}>
       <div className="page-head">
-        <div>
-          <h1>Einstellungen</h1>
-          <p className="page-sub">Arbeitsspeicher, Java und Versionen.</p>
-        </div>
+        <h1>Einstellungen</h1>
         {saved && <span style={{ color: 'var(--accent)' }}>Gespeichert ✓</span>}
       </div>
 

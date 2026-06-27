@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
 import { Button, Chip, ProgressBar, Select } from '../components/ui'
+import Icon from '../components/icons'
 import SkinHead from '../components/SkinHead'
 
 const PHASE_LABEL: Record<string, string> = {
@@ -112,7 +113,7 @@ export default function Play({
       <div className="play-hero">
         <div className="row" style={{ gap: 14 }}>
           <div className="instance-card__icon" style={{ width: 56, height: 56 }}>
-            🎮
+            <Icon name="cube" size={30} />
           </div>
           <div>
             <div className="play-hero__title">{current.name}</div>
@@ -158,6 +159,9 @@ export default function Play({
             disabled={busy}
             onClick={handlePlay}
           >
+            {!installing && !running && account && (
+              <Icon name={current.installed ? 'play' : 'download'} size={18} />
+            )}
             {installing
               ? 'Installiere …'
               : running
@@ -165,8 +169,8 @@ export default function Play({
                 : !account
                   ? 'Account wählen'
                   : current.installed
-                    ? '▶ Spielen'
-                    : '⤓ Installieren & Spielen'}
+                    ? 'Spielen'
+                    : 'Installieren & Spielen'}
           </Button>
           {statusLine && <span className="text-soft">{statusLine}</span>}
         </div>

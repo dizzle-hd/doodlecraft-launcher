@@ -43,5 +43,8 @@
     "wired-elements": "^3.0.0-rc.6",
     "zustand": "^5.0.14"
   },
-  "allowScripts": {}
+  "allowScripts": {},
+  "overrides": {
+    "undici": "^6.21.3"
+  }
 }

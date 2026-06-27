@@ -7,7 +7,8 @@ import type {
   ModSearchHit
 } from '@shared/ipc'
 import { useInstances } from '../store/instances'
-import { Button, Card, Chip, IconButton, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
+import { Button, Chip, IconButton, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
+import Icon from '../components/icons'
 
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft',
@@ -57,14 +58,9 @@ export default function Instances(): JSX.Element {
   return (
     <div className="stack">
       <div className="page-head">
-        <div>
-          <h1>Instanzen</h1>
-          <p className="page-sub">
-            Getrennte Spielstände mit eigener Version, Mods und Konfiguration.
-          </p>
-        </div>
+        <h1>Instanzen</h1>
         <Button variant="primary" onClick={() => setCreating(true)}>
-          ＋ Neue Instanz
+          <Icon name="plus" size={16} /> Neue Instanz
         </Button>
       </div>
 
@@ -138,7 +134,9 @@ function InstanceCard({
   return (
     <div className="instance-card">
       <div className="instance-card__top">
-        <div className="instance-card__icon">🧊</div>
+        <div className="instance-card__icon">
+          <Icon name="cube" size={24} />
+        </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           {editing ? (
             <Input value={draft} onChange={setDraft} onEnter={commit} full />
@@ -200,16 +198,16 @@ function InstanceCard({
       ) : (
         <div className="instance-card__more">
           <IconButton title="Umbenennen" onClick={() => setEditing(true)}>
-            ✎
+            <Icon name="edit" size={17} />
           </IconButton>
           <IconButton title="Ordner öffnen" onClick={onOpenFolder}>
-            🗀
+            <Icon name="folder" size={17} />
           </IconButton>
           <IconButton title="Duplizieren" onClick={onDuplicate}>
-            ⧉
+            <Icon name="copy" size={17} />
           </IconButton>
           <IconButton title="Löschen" danger onClick={onRemove}>
-            🗑
+            <Icon name="trash" size={17} />
           </IconButton>
         </div>
       )}
@@ -468,5 +466,9 @@ function ModpackBrowser({
 
 export function ModIcon({ url }: { url?: string }): JSX.Element {
   if (url) return <img className="mod-row__icon" src={url} alt="" />
-  return <div className="mod-row__icon mod-row__icon--placeholder">📦</div>
+  return (
+    <div className="mod-row__icon mod-row__icon--placeholder">
+      <Icon name="package" size={22} />
+    </div>
+  )
 }

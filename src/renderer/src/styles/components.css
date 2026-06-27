@@ -702,3 +702,166 @@
   margin-bottom: 10px;
   border: 1px solid var(--border);
 }
+.theme-card {
+  transition: border-color 0.14s, transform 0.14s, box-shadow 0.14s;
+}
+.theme-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+/* ===================== Animationen & Feinschliff ===================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.page-anim {
+  animation: pageIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.modal-overlay {
+  animation: fadeIn 0.15s ease both;
+}
+.modal {
+  animation: modalIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Inhalt mit dezenter Tiefe + Kopfzeile mit Trennlinie */
+.content {
+  background: radial-gradient(
+      120% 70% at 100% 0%,
+      rgba(27, 217, 106, 0.045),
+      transparent 55%
+    ),
+    var(--bg);
+}
+.page-head {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+}
+.page-head h1 {
+  font-size: 1.7rem;
+  margin: 0;
+}
+
+/* Buttons: sanftes Anheben/Drücken + Akzent-Glow */
+.btn {
+  transition: background 0.12s, border-color 0.12s, transform 0.08s, box-shadow 0.14s;
+}
+.btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+.btn--primary {
+  box-shadow: 0 2px 12px rgba(27, 217, 106, 0.22);
+}
+.btn--primary:not(:disabled):hover {
+  box-shadow: 0 4px 20px rgba(27, 217, 106, 0.4);
+}
+.icon-btn {
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+.icon-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Navigation: aktiver Eintrag rückt leicht ein */
+.nav-item {
+  transition: background 0.12s, color 0.12s, padding-left 0.14s;
+}
+.nav-item.is-active {
+  padding-left: 15px;
+}
+.nav-item__icon {
+  transition: color 0.12s;
+}
+.nav-item.is-active .nav-item__icon {
+  color: var(--accent);
+}
+
+/* Karten heben sich beim Hover */
+.card,
+.instance-card,
+.mod-row {
+  transition: border-color 0.14s, background 0.14s, transform 0.14s, box-shadow 0.14s;
+}
+.instance-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: var(--border-strong);
+}
+.mod-row:hover {
+  border-color: var(--border-strong);
+}
+.instance-card__icon {
+  color: var(--accent);
+}
+
+/* Play-Hero mit Akzent-Schimmer + leuchtender Button */
+.play-hero {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(
+      120% 140% at 0% 0%,
+      rgba(27, 217, 106, 0.1),
+      transparent 55%
+    ),
+    var(--surface);
+}
+.play-btn {
+  box-shadow: 0 4px 22px rgba(27, 217, 106, 0.35);
+}
+
+/* Fortschrittsbalken mit laufendem Glanz */
+.progress__fill--accent {
+  position: relative;
+  overflow: hidden;
+}
+.progress__fill--accent::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+  animation: shimmer 1.3s linear infinite;
+}
+
+/* Titelleisten-Logo dezent grün leuchtend */
+.titlebar__logo {
+  text-shadow: 0 0 10px rgba(27, 217, 106, 0.5);
+}

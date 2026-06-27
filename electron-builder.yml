@@ -7,9 +7,12 @@ files:
   - out/**/*
   - package.json
 win:
+  icon: resources/icon.ico
   target:
     - nsis
     - portable
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico

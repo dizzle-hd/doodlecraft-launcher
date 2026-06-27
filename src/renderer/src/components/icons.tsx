@@ -83,7 +83,18 @@ const PATHS: Record<string, JSX.Element> = {
   download: <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" />,
   check: <path d="M5 12.5l4.5 4.5L19 7" />,
   minimize: <path d="M5 12h14" />,
-  maximize: <rect x="5" y="5" width="14" height="14" rx="1.5" />
+  maximize: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
+  skin: (
+    <>
+      <path d="M8 3.5L4 6v4l2 1v6.5h8V11l2-1V6l-4-2.5a4 4 0 01-4 0z" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M4 11a8 8 0 0114-5l2 2M20 13a8 8 0 01-14 5l-2-2" />
+      <path d="M20 4v4h-4M4 20v-4h4" />
+    </>
+  )
 }
 
 export interface IconProps {

@@ -6,6 +6,7 @@ import Instances from './pages/Instances'
 import Mods from './pages/Mods'
 import Logs from './pages/Logs'
 import Accounts from './pages/Accounts'
+import Skins from './pages/Skins'
 import Appearance from './pages/Appearance'
 import Settings from './pages/Settings'
 import SkinHead from './components/SkinHead'
@@ -17,6 +18,7 @@ const NAV: NavItem[] = [
   { id: 'mods', label: 'Mods', icon: <Icon name="mods" size={18} /> },
   { id: 'logs', label: 'Logs', icon: <Icon name="logs" size={18} /> },
   { id: 'accounts', label: 'Accounts', icon: <Icon name="accounts" size={18} /> },
+  { id: 'skins', label: 'Skins', icon: <Icon name="skin" size={18} /> },
   { id: 'design', label: 'Design', icon: <Icon name="design" size={18} /> },
   { id: 'settings', label: 'Einstellungen', icon: <Icon name="settings" size={18} /> }
 ]
@@ -54,6 +56,7 @@ export default function App(): JSX.Element {
         {active === 'mods' && <Mods />}
         {active === 'logs' && <Logs />}
         {active === 'accounts' && <Accounts />}
+        {active === 'skins' && <Skins />}
         {active === 'design' && <Appearance />}
         {active === 'settings' && <Settings />}
       </div>

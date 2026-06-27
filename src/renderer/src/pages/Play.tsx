@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
-import { Button, Chip, ProgressBar, Select } from '../components/ui'
+import { Chip, ProgressBar, Select } from '../components/ui'
 import Icon from '../components/icons'
-import { InstanceIcon } from '../components/InstanceIcon'
-import SkinHead from '../components/SkinHead'
+import SkinRender from '../components/SkinRender'
 
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft wird geladen',
@@ -67,9 +66,7 @@ export default function Play({
     }
     setError(null)
     try {
-      if (!current.installed) {
-        await install(current.id)
-      }
+      if (!current.installed) await install(current.id)
       await launch(current.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -87,6 +84,16 @@ export default function Play({
     )
   }
 
+  const label = installing
+    ? 'Installiere …'
+    : running
+      ? 'Läuft …'
+      : !account
+        ? 'Account wählen'
+        : current.installed
+          ? 'Spielen'
+          : 'Installieren & Spielen'
+
   const statusLine = running
     ? launch_?.state === 'running'
       ? 'Läuft – viel Spaß!'
@@ -96,92 +103,72 @@ export default function Play({
       : ''
 
   return (
-    <div className="stack" style={{ maxWidth: 720 }}>
-      <div className="page-head">
-        <h1>Spielen</h1>
-        {instances.length > 1 && (
-          <Select
-            value={current.id}
-            onChange={setSelectedId}
-            options={instances.map((i) => ({
-              value: i.id,
-              label: `${i.name} · ${i.mcVersion}`
-            }))}
-          />
-        )}
-      </div>
-
-      <div className="play-hero">
-        <div className="row" style={{ gap: 14 }}>
-          <div className="instance-card__icon" style={{ width: 56, height: 56 }}>
-            <InstanceIcon icon={current.icon} size={34} />
-          </div>
-          <div>
-            <div className="play-hero__title">{current.name}</div>
-            <div className="row" style={{ gap: 6, marginTop: 4 }}>
-              <Chip>{current.mcVersion}</Chip>
-              {current.loader && (
-                <Chip>
-                  {current.loader}
-                  {current.loaderVersion ? ` ${current.loaderVersion}` : ''}
-                </Chip>
-              )}
-              <Chip tone={current.installed ? 'accent' : 'default'}>
-                {current.installed ? 'installiert' : 'nicht installiert'}
+    <div className="stack play-page">
+      <div className="play-stage">
+        <div className="play-stage__meta">
+          <div className="play-stage__title">{current.name}</div>
+          <div className="row" style={{ gap: 6, justifyContent: 'center' }}>
+            <Chip>{current.mcVersion}</Chip>
+            {current.loader && (
+              <Chip>
+                {current.loader}
+                {current.loaderVersion ? ` ${current.loaderVersion}` : ''}
               </Chip>
-            </div>
+            )}
+            <Chip tone={current.installed ? 'accent' : 'default'}>
+              {current.installed ? 'installiert' : 'nicht installiert'}
+            </Chip>
           </div>
         </div>
 
-        <div className="row">
-          {account ? (
+        {account ? (
+          <SkinRender uuid={account.uuid} height={400} rotation={0.45} />
+        ) : (
+          <div className="skin-render" style={{ height: 400 }}>
+            <div className="skin-render__msg muted">Kein Account – Skin nicht verfügbar</div>
+          </div>
+        )}
+
+        <div className="play-pill">
+          <button className="play-pill__play" disabled={busy} onClick={handlePlay}>
+            {!installing && !running && account && (
+              <Icon name={current.installed ? 'play' : 'download'} size={20} />
+            )}
+            {label}
+          </button>
+          {instances.length > 1 && (
             <>
-              <SkinHead uuid={account.uuid} name={account.name} size={26} />
-              <span className="text-soft">{account.name}</span>
+              <span className="play-pill__div" />
+              <Select
+                className="play-pill__switch"
+                value={current.id}
+                onChange={setSelectedId}
+                options={instances.map((i) => ({ value: i.id, label: i.name }))}
+              />
             </>
-          ) : (
-            <span className="muted">Kein Account ausgewählt</span>
           )}
         </div>
-
-        {installing && prog && (
-          <div className="stack" style={{ gap: 6 }}>
-            <ProgressBar value={prog.progress} />
-            <span className="muted" style={{ fontSize: '0.82rem' }}>
-              {PHASE_LABEL[prog.phase] ?? prog.phase} · {Math.round(prog.progress * 100)}%
-            </span>
-          </div>
-        )}
-
-        <div className="row">
-          <Button
-            variant="primary"
-            className="play-btn"
-            disabled={busy}
-            onClick={handlePlay}
-          >
-            {!installing && !running && account && (
-              <Icon name={current.installed ? 'play' : 'download'} size={18} />
-            )}
-            {installing
-              ? 'Installiere …'
-              : running
-                ? 'Läuft …'
-                : !account
-                  ? 'Account wählen'
-                  : current.installed
-                    ? 'Spielen'
-                    : 'Installieren & Spielen'}
-          </Button>
-          {statusLine && <span className="text-soft">{statusLine}</span>}
-        </div>
-
-        {(error || prog?.phase === 'error') && (
-          <p style={{ color: 'var(--danger)', margin: 0 }}>
-            {error ?? prog?.error ?? 'Installation fehlgeschlagen.'}
-          </p>
-        )}
       </div>
+
+      {installing && prog && (
+        <div className="stack play-progress" style={{ gap: 6 }}>
+          <ProgressBar value={prog.progress} />
+          <span className="muted" style={{ fontSize: '0.82rem', textAlign: 'center' }}>
+            {PHASE_LABEL[prog.phase] ?? prog.phase} · {Math.round(prog.progress * 100)}%
+          </span>
+        </div>
+      )}
+
+      {statusLine && (
+        <p className="text-soft" style={{ textAlign: 'center', margin: 0 }}>
+          {statusLine}
+        </p>
+      )}
+      {(error || prog?.phase === 'error') && (
+        <p style={{ color: 'var(--danger)', textAlign: 'center', margin: 0 }}>
+          {error ?? prog?.error ?? 'Installation fehlgeschlagen.'}
+        </p>
+      )}
     </div>
   )
 }

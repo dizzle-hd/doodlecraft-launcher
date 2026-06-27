@@ -40,6 +40,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "roughjs": "^4.6.6",
+    "skinview3d": "^3.4.2",
     "wired-elements": "^3.0.0-rc.6",
     "zustand": "^5.0.14"
   },

@@ -33,6 +33,15 @@ export interface Account {
   addedAt: number
 }
 
+/** Skin-Textur eines Spielers (von Mojang geholt, als data:-URL). */
+export interface SkinData {
+  /** PNG der Skin-Textur als data:-URL (CORS-/CSP-sicher). */
+  dataUrl: string
+  /** true = schmale Arme (Alex-Modell). */
+  slim: boolean
+  name?: string
+}
+
 /** Wird während des Device-Code-Logins an den Renderer gepusht. */
 export interface DeviceCodeInfo {
   userCode: string
@@ -236,6 +245,12 @@ export interface IpcInvokeMap {
   'auth:loginMicrosoft': {
     args: []
     result: Account
+  }
+
+  /** Holt die Skin-Textur eines Spielers von Mojang (Fetch -> data:-URL). */
+  'skin:get': {
+    args: [uuid: string]
+    result: SkinData | null
   }
 
   'settings:get': {

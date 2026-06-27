@@ -6,6 +6,7 @@ import {
   removeAccount,
   loginMicrosoft
 } from '../services/auth'
+import { fetchSkin } from '../services/skin'
 
 /** IPC-Handler rund um Accounts/Login. */
 export function registerAuthHandlers(): void {
@@ -17,4 +18,6 @@ export function registerAuthHandlers(): void {
   handle('auth:loginMicrosoft', (ctx) =>
     loginMicrosoft((info) => emit(ctx.sender, 'auth:deviceCode', info))
   )
+
+  handle('skin:get', (_ctx, uuid) => fetchSkin(uuid))
 }

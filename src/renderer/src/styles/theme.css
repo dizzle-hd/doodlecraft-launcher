@@ -15,7 +15,7 @@
   --titlebar-h: 38px;
   --sidebar-w: 232px;
 
-  /* Akzent (Modrinth-Grün) – in beiden Themes gleich */
+  /* Akzent (Standard: Modrinth-Grün) – per data-accent umschaltbar */
   --accent: #1bd96a;
   --accent-hover: #15c25e;
   --accent-press: #12a851;
@@ -66,4 +66,48 @@
   --shadow-sm: 0 2px 8px rgba(20, 22, 26, 0.08);
 
   color-scheme: light;
+}
+
+/* ---------------- Akzentfarben (data-accent) ---------------- */
+[data-accent='green'] {
+  --accent: #1bd96a;
+  --accent-hover: #15c25e;
+  --accent-press: #12a851;
+  --on-accent: #06130b;
+}
+[data-accent='blue'] {
+  --accent: #3b82f6;
+  --accent-hover: #2f6fe0;
+  --accent-press: #2861c9;
+  --on-accent: #ffffff;
+}
+[data-accent='purple'] {
+  --accent: #8b5cf6;
+  --accent-hover: #7c4ddb;
+  --accent-press: #6f43c7;
+  --on-accent: #ffffff;
+}
+[data-accent='pink'] {
+  --accent: #ec4899;
+  --accent-hover: #db3d8b;
+  --accent-press: #c5357c;
+  --on-accent: #ffffff;
+}
+[data-accent='orange'] {
+  --accent: #f59e0b;
+  --accent-hover: #e08e06;
+  --accent-press: #c87e04;
+  --on-accent: #1a1206;
+}
+[data-accent='red'] {
+  --accent: #ef4444;
+  --accent-hover: #e0383b;
+  --accent-press: #c93033;
+  --on-accent: #ffffff;
+}
+[data-accent='cyan'] {
+  --accent: #06b6d4;
+  --accent-hover: #06a3be;
+  --accent-press: #058da5;
+  --on-accent: #06121a;
 }

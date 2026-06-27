@@ -69,7 +69,8 @@ export async function launchInstance(
   const auth = await getLaunchAuth(account.id)
 
   const option: LaunchOption = {
-    version: instance.mcVersion,
+    // Bei Loadern die abgeleitete Version starten, sonst Vanilla.
+    version: instance.launchVersion ?? instance.mcVersion,
     gamePath: instanceDir(instanceId),
     resourcePath: paths.minecraft,
     javaPath,

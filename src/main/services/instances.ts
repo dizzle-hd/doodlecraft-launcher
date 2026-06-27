@@ -101,6 +101,8 @@ export function createInstance(input: CreateInstanceInput): Instance {
     id: slugify(name),
     name,
     mcVersion: input.mcVersion,
+    loader: input.loader,
+    loaderVersion: input.loaderVersion?.trim() || undefined,
     installed: false,
     createdAt: Date.now()
   }

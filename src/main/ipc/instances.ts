@@ -9,6 +9,7 @@ import {
 } from '../services/instances'
 import { installInstance } from '../services/install'
 import { launchInstance, runningInstanceIds } from '../services/launch'
+import { listLoaderVersions } from '../services/loaders'
 
 /** IPC-Handler für Einstellungen, Versionen, Instanzen (M4) und Start (M5). */
 export function registerInstanceHandlers(): void {
@@ -16,6 +17,9 @@ export function registerInstanceHandlers(): void {
   handle('settings:update', (_ctx, patch) => updateSettings(patch))
 
   handle('versions:list', () => listVersions())
+  handle('loaders:list', (_ctx, loader, mcVersion) =>
+    listLoaderVersions(loader, mcVersion)
+  )
 
   handle('instances:list', () => listInstances())
   handle('instances:create', (_ctx, input) => createInstance(input))

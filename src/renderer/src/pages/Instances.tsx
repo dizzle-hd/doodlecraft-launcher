@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Instance } from '@shared/ipc'
+import type { Instance, LoaderType, LoaderVersion } from '@shared/ipc'
 import { useInstances } from '../store/instances'
 import DoodleCard from '../components/DoodleCard'
 import RoughProgressBar from '../components/RoughProgressBar'
@@ -8,9 +8,17 @@ import { WiredButton, WiredCombo, WiredInput, WiredItem } from '../components/wi
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft',
   java: 'Java',
+  loader: 'Mod-Loader',
   done: 'Fertig',
   error: 'Fehler'
 }
+
+const LOADERS: { value: '' | LoaderType; label: string }[] = [
+  { value: '', label: 'Vanilla' },
+  { value: 'fabric', label: 'Fabric' },
+  { value: 'forge', label: 'Forge' },
+  { value: 'quilt', label: 'Quilt' }
+]
 
 export default function Instances(): JSX.Element {
   const {
@@ -34,6 +42,10 @@ export default function Instances(): JSX.Element {
 
   const [name, setName] = useState('')
   const [version, setVersion] = useState('')
+  const [loader, setLoader] = useState<'' | LoaderType>('')
+  const [loaderVersion, setLoaderVersion] = useState('')
+  const [loaderVersions, setLoaderVersions] = useState<LoaderVersion[]>([])
+  const [loaderLoading, setLoaderLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,10 +64,38 @@ export default function Instances(): JSX.Element {
     if (!version && versions) setVersion(versions.latestRelease)
   }, [versions, version])
 
+  // Loader-Versionen passend zu Loader + MC-Version laden.
+  useEffect(() => {
+    setLoaderVersion('')
+    setLoaderVersions([])
+    if (!loader || !version) return
+    let cancelled = false
+    setLoaderLoading(true)
+    window.api
+      .invoke('loaders:list', loader, version)
+      .then((list) => {
+        if (!cancelled) setLoaderVersions(list)
+      })
+      .catch(() => {
+        if (!cancelled) setLoaderVersions([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoaderLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loader, version])
+
   const handleCreate = async (): Promise<void> => {
     setError(null)
     try {
-      await create({ name, mcVersion: version })
+      await create({
+        name,
+        mcVersion: version,
+        loader: loader || undefined,
+        loaderVersion: loaderVersion || undefined
+      })
       setName('')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -93,6 +133,40 @@ export default function Instances(): JSX.Element {
           <WiredButton elevation={2} onClick={handleCreate}>
             ＋ Anlegen
           </WiredButton>
+        </div>
+
+        <div className="row" style={{ marginTop: 14 }}>
+          <span style={{ color: 'var(--ink-soft)' }}>Loader:</span>
+          <WiredCombo
+            value={loader}
+            onSelect={(v) => setLoader(v as '' | LoaderType)}
+            style={{ minWidth: 130 }}
+          >
+            {LOADERS.map((l) => (
+              <WiredItem key={l.value || 'vanilla'} value={l.value}>
+                {l.label}
+              </WiredItem>
+            ))}
+          </WiredCombo>
+
+          {loader &&
+            (loaderLoading ? (
+              <span style={{ color: 'var(--ink-faint)' }}>Loader-Versionen …</span>
+            ) : (
+              <WiredCombo
+                value={loaderVersion}
+                onSelect={setLoaderVersion}
+                style={{ minWidth: 200 }}
+              >
+                <WiredItem value="">Neueste (empfohlen)</WiredItem>
+                {loaderVersions.map((lv) => (
+                  <WiredItem key={lv.version} value={lv.version}>
+                    {lv.version}
+                    {lv.recommended ? ' · empfohlen' : lv.stable ? ' · stabil' : ''}
+                  </WiredItem>
+                ))}
+              </WiredCombo>
+            ))}
         </div>
 
         <div className="row" style={{ marginTop: 14 }}>
@@ -165,7 +239,12 @@ function InstanceRow({
         <span className="instance-row__name">{instance.name}</span>
         <div className="row" style={{ gap: 8 }}>
           <span className="doodle-chip">{instance.mcVersion}</span>
-          {instance.loader && <span className="doodle-chip">{instance.loader}</span>}
+          {instance.loader && (
+            <span className="doodle-chip">
+              {instance.loader}
+              {instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}
+            </span>
+          )}
           <span className="doodle-chip">
             {running
               ? 'läuft ▸'

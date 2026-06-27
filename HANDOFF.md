@@ -22,12 +22,12 @@ Der vollständige Original-Plan liegt unter
 | **M3** | Auth: MS Device-Code (öffentl. Client-ID) + Offline + Multi-Account | ✅ fertig & verifiziert |
 | **M4** | Versionen & Instanzen (Download, Instanz-Verwaltung, Java) | ✅ fertig (build/typecheck grün; Download-Verifikation nur außerhalb dieser Sandbox möglich) |
 | **M5** | Spielstart (@xmcl/core) | ✅ fertig (build/typecheck grün; echter Start nur außerhalb dieser Sandbox prüfbar) |
-| M6 | Mod-Loader (Fabric/Forge/Quilt) | 🚧 **HIER WEITERMACHEN** |
-| M7 | Mods & Modpacks (Modrinth/CurseForge) | ⬜ offen |
+| **M6** | Mod-Loader (Fabric/Forge/Quilt) | ✅ fertig (build/typecheck grün; echter Loader-Install nur außerhalb dieser Sandbox prüfbar) |
+| M7 | Mods & Modpacks (Modrinth/CurseForge) | 🚧 **HIER WEITERMACHEN** |
 | M8 | Politur & Windows-Build | ⬜ offen |
 
-Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M5 completed,
-M6 in_progress.
+Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M6 completed,
+M7 in_progress.
 
 ## So läuft das Projekt
 
@@ -85,6 +85,7 @@ src/
       instances.ts         # Instanz-CRUD: list/create/delete/duplicate + patchInstance (M4)
       install.ts           # Vanilla-Install (installTask) + Java-Runtime + Fortschritts-Events (M4)
       launch.ts            # Spielstart via @xmcl/core launch() + Process-Watcher + launch:status (M5)
+      loaders.ts           # Loader-Versionslisten + Default-Auswahl (Fabric/Forge/Quilt) (M6)
   preload/
     index.ts               # contextBridge -> window.api.invoke()/on() (generisch, getypt)
     index.d.ts             # Window.api Typ
@@ -202,15 +203,42 @@ Versionen, Instanzen, Vanilla-Download und Java-Provisioning sind implementiert.
 > dieser Sandbox, kein Java/Display). Auf Windows verifizieren: installierte
 > Instanz wählen → „Spielen" → MC-Fenster erscheint, Status wechselt auf „läuft".
 
-## 👉 Nächster Schritt: M6 (Mod-Loader) implementieren
+## ✅ M6 erledigt — so funktioniert es
 
-Fabric/Forge/Quilt via `@xmcl/installer` (`installFabric`, `installForge`,
-`installQuiltVersion`, `getFabricLoaders`/`getForgeVersionList`/`getQuiltLoaders`).
-Loader-Auswahl beim Anlegen/Bearbeiten der Instanz (`instance.loader` +
-`loaderVersion` sind im Schema schon vorhanden). Der Loader installiert eine
-abgeleitete Version unter `paths.minecraft/versions/<loader-id>`; diese ID dann
-als `version` an `launch()` geben (statt der reinen `mcVersion`). Tipp: in
-`instance.json` zusätzlich die zu startende `launchVersion`/abgeleitete ID ablegen.
+- **`services/loaders.ts`** — `listLoaderVersions(loader, mc)` (Fabric:
+  `getLoaderArtifactListFor`, Quilt: `getQuiltLoaderVersionsByMinecraft`, Forge:
+  `getForgeVersionList`) für die UI-Combo; `resolveDefaultLoaderVersion()` wählt
+  recommended → stable → erste.
+- **`services/install.ts` → `provisionLoader()`** — läuft nach Vanilla + Java:
+  - **Forge:** `installForgeTask({ mcversion, version }, paths.minecraft,
+    { side: 'client', java })` — braucht die Java-Binary (>=1.13), die aus der
+    zuvor beschafften Runtime kommt. Bringt Libraries + Processors selbst mit.
+  - **Fabric/Quilt:** `installFabric`/`installQuiltVersion` schreiben **nur** das
+    Versions-JSON → danach `Version.parse()` + `installLibrariesTask()` zum
+    Nachladen der Loader-Bibliotheken (`ensureLoaderLibraries`).
+  - Ergebnis ist die abgeleitete Versions-ID → wird als `instance.launchVersion`
+    (plus aufgelöste `loaderVersion`) gespeichert. Neue Install-Phase `loader`.
+- **`services/launch.ts`** — startet `instance.launchVersion ?? instance.mcVersion`.
+- **IPC**: `loaders:list`. **Renderer**: `pages/Instances.tsx` hat im „Neue
+  Instanz"-Formular eine Loader-Auswahl (Vanilla/Fabric/Forge/Quilt) + optionale
+  Loader-Versions-Combo (leer = neueste/empfohlen). `CreateInstanceInput` trägt
+  `loader`/`loaderVersion`.
+
+> ⚠️ **Verifikations-Hinweis:** typecheck + build grün, alle Loader-Runtime-Exports
+> geprüft. Echter Loader-Install/-Start in dieser Sandbox nicht testbar (Mojang/
+> Fabric/Forge-Netz geblockt, kein Java/Display). Forge nutzt zudem die HTTP-Maven
+> `files.minecraftforge.net` — ggf. Proxy/Allowlist beachten. Auf Windows je Loader
+> eine Instanz anlegen → installieren → starten.
+
+## 👉 Nächster Schritt: M7 (Mods & Modpacks) implementieren
+
+Mods/Modpacks über Modrinth (`https://api.modrinth.com/v2`) und optional
+CurseForge. Pro Instanz liegt ein `mods/`-Ordner (`paths.instances/<id>/mods`),
+in den die `.jar`-Dateien geladen werden; passend zu `instance.loader` +
+`instance.mcVersion` filtern. Vorschlag: `services/mods.ts` (Suche/Download via
+`fetch`, Datei-Transfer ggf. `@xmcl/file-transfer`), `ipc/mods.ts`
+(`mods:search|install|list|remove`), `pages/Mods.tsx` + Nav-Eintrag. Modpacks
+(Modrinth `.mrpack`) entpacken und als neue Instanz anlegen.
 
 ## Verifikations-Werkzeuge (bewährt)
 

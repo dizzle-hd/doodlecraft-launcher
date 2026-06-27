@@ -4,15 +4,20 @@ import type { WebContents } from 'electron'
 import {
   installTask,
   fetchJavaRuntimeManifest,
-  installJavaRuntimeTask
+  installJavaRuntimeTask,
+  installFabric,
+  installQuiltVersion,
+  installForgeTask,
+  installLibrariesTask
 } from '@xmcl/installer'
 import { TaskState, type Task, type TaskContext } from '@xmcl/task'
-import type { ResolvedVersion } from '@xmcl/core'
+import { Version, type ResolvedVersion } from '@xmcl/core'
 import { paths } from '../paths'
 import { emit } from '../ipc/registry'
 import type { Instance, InstallProgress } from '@shared/ipc'
 import { getVersionMeta } from './versions'
 import { patchInstance, readInstanceOrThrow } from './instances'
+import { resolveDefaultLoaderVersion } from './loaders'
 
 function send(sender: WebContents, payload: InstallProgress): void {
   emit(sender, 'install:progress', payload)
@@ -116,10 +121,73 @@ async function provisionJava(
   return component
 }
 
+/** Lädt fehlende Bibliotheken einer (abgeleiteten) Loader-Version nach. */
+async function ensureLoaderLibraries(
+  sender: WebContents,
+  instanceId: string,
+  versionId: string
+): Promise<void> {
+  const resolved = await Version.parse(paths.minecraft, versionId)
+  await runTracked(sender, instanceId, 'loader', installLibrariesTask(resolved))
+}
+
+/**
+ * Installiert den Mod-Loader der Instanz auf der bereits vorhandenen Vanilla-
+ * Version und liefert die zu startende, abgeleitete Versions-ID zurück.
+ * Fabric/Quilt schreiben nur das Versions-JSON → Bibliotheken werden danach
+ * nachgezogen; Forge bringt seinen vollständigen Installer mit (braucht Java).
+ */
+async function provisionLoader(
+  sender: WebContents,
+  instanceId: string,
+  instance: Instance,
+  javaComponent: string | undefined
+): Promise<string | undefined> {
+  if (!instance.loader) return undefined
+
+  send(sender, { instanceId, phase: 'loader', progress: 0, label: instance.loader })
+
+  const loaderVersion =
+    instance.loaderVersion ??
+    (await resolveDefaultLoaderVersion(instance.loader, instance.mcVersion))
+
+  let versionId: string
+  if (instance.loader === 'forge') {
+    const java = resolveJavaBinary(javaComponent) ?? undefined
+    const task = installForgeTask(
+      { mcversion: instance.mcVersion, version: loaderVersion },
+      paths.minecraft,
+      { side: 'client', java }
+    )
+    versionId = await runTracked(sender, instanceId, 'loader', task)
+  } else if (instance.loader === 'fabric') {
+    versionId = await installFabric({
+      minecraftVersion: instance.mcVersion,
+      version: loaderVersion,
+      minecraft: paths.minecraft,
+      side: 'client'
+    })
+    await ensureLoaderLibraries(sender, instanceId, versionId)
+  } else {
+    versionId = await installQuiltVersion({
+      minecraftVersion: instance.mcVersion,
+      version: loaderVersion,
+      minecraft: paths.minecraft,
+      side: 'client'
+    })
+    await ensureLoaderLibraries(sender, instanceId, versionId)
+  }
+
+  // Aufgelöste Loader-Version + Startversion festhalten.
+  patchInstance(instanceId, { loaderVersion, launchVersion: versionId })
+  send(sender, { instanceId, phase: 'loader', progress: 1 })
+  return versionId
+}
+
 /**
  * Installiert (bzw. vervollständigt) eine Instanz: Vanilla-Version inkl.
- * Assets/Libraries in den gemeinsamen `paths.minecraft` plus passende Java-
- * Runtime. Markiert die Instanz anschließend als `installed`.
+ * Assets/Libraries in den gemeinsamen `paths.minecraft`, passende Java-Runtime
+ * und – falls gesetzt – den Mod-Loader. Markiert sie anschließend als `installed`.
  */
 export async function installInstance(
   sender: WebContents,
@@ -135,8 +203,18 @@ export async function installInstance(
     const resolved = await runTracked(sender, instanceId, 'minecraft', rootTask)
 
     const javaComponent = await provisionJava(sender, instanceId, resolved)
+    const launchVersion = await provisionLoader(
+      sender,
+      instanceId,
+      instance,
+      javaComponent
+    )
 
-    const updated = patchInstance(instanceId, { installed: true, javaComponent })
+    const updated = patchInstance(instanceId, {
+      installed: true,
+      javaComponent,
+      launchVersion
+    })
     send(sender, { instanceId, phase: 'done', progress: 1 })
     return updated
   } catch (e) {

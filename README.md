@@ -31,9 +31,9 @@ npm run package      # Windows-Installer/Portable (release/)
 
 ## Status
 
-Siehe Meilensteine M1–M8. Aktuell fertig: **M1–M5** (Scaffold, Design-System,
-Auth, Versionen & Instanzen, Spielstart). Als Nächstes: **M6 — Mod-Loader
-(Fabric/Forge/Quilt)**.
+Siehe Meilensteine M1–M8. Aktuell fertig: **M1–M6** (Scaffold, Design-System,
+Auth, Versionen & Instanzen, Spielstart, Mod-Loader Fabric/Forge/Quilt). Als
+Nächstes: **M7 — Mods & Modpacks (Modrinth/CurseForge)**.
 
 ## Hinweis zum Login
 

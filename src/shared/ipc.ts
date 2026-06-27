@@ -73,18 +73,26 @@ export interface VersionList {
   versions: VersionSummary[]
 }
 
+/** Unterstützte Mod-Loader (M6). */
+export type LoaderType = 'fabric' | 'forge' | 'quilt'
+
 /** Eine Spiel-Instanz (eigener Ordner unter paths.instances/<id>/). */
 export interface Instance {
   /** Stabiler Slug = zugleich der Ordnername. */
   id: string
   name: string
   mcVersion: string
-  /** Mod-Loader (M6). Noch ungenutzt, aber im Schema vorgesehen. */
-  loader?: 'fabric' | 'forge' | 'quilt'
+  /** Mod-Loader (M6); fehlt = Vanilla. */
+  loader?: LoaderType
   loaderVersion?: string
+  /**
+   * Die tatsächlich zu startende Versions-ID. Bei Loadern die abgeleitete
+   * Version (z. B. `1.20.1-fabric0.15.0`), bei Vanilla undefiniert (= mcVersion).
+   */
+  launchVersion?: string
   /** Mojang-Java-Komponente, die für den Start gebraucht wird (z. B. java-runtime-gamma). */
   javaComponent?: string
-  /** true, sobald Vanilla-Dateien vollständig installiert sind. */
+  /** true, sobald alle Dateien (inkl. Loader) vollständig installiert sind. */
   installed: boolean
   createdAt: number
   lastPlayed?: number
@@ -93,13 +101,25 @@ export interface Instance {
 export interface CreateInstanceInput {
   name: string
   mcVersion: string
+  loader?: LoaderType
+  /** Optional; leer = beim Installieren neueste/empfohlene Version wählen. */
+  loaderVersion?: string
+}
+
+/** Eine wählbare Loader-Version (für die UI-Combo). */
+export interface LoaderVersion {
+  version: string
+  /** Als stabil markiert (Fabric/Quilt) bzw. recommended/common (Forge). */
+  stable?: boolean
+  /** Forge: ausdrücklich „recommended". */
+  recommended?: boolean
 }
 
 /** Fortschritts-Push während einer Installation. */
 export interface InstallProgress {
   instanceId: string
   /** Aktuelle Phase des Vorgangs. */
-  phase: 'minecraft' | 'java' | 'done' | 'error'
+  phase: 'minecraft' | 'java' | 'loader' | 'done' | 'error'
   /** 0..1. */
   progress: number
   /** Menschliche Kurzbeschreibung (z. B. aktueller Task-Pfad). */
@@ -176,6 +196,11 @@ export interface IpcInvokeMap {
   'versions:list': {
     args: []
     result: VersionList
+  }
+  /** Verfügbare Loader-Versionen für einen Loader-Typ + MC-Version. */
+  'loaders:list': {
+    args: [loader: LoaderType, mcVersion: string]
+    result: LoaderVersion[]
   }
 
   'instances:list': {

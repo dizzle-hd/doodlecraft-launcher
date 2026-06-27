@@ -1,23 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { InstalledMod, ModSearchHit } from '@shared/ipc'
 import { useInstances } from '../store/instances'
-import DoodleCard from '../components/DoodleCard'
-import { WiredButton, WiredCombo, WiredInput, WiredItem } from '../components/wired'
+import { Button, Card, Chip, Input, Select, Spinner } from '../components/ui'
+import { ModIcon } from './Instances'
 
-/**
- * Mod-Verwaltung je Instanz (M7, Modrinth): Suche/Installieren sowie
- * Aktivieren/Deaktivieren/Entfernen installierter Mods.
- */
 export default function Mods(): JSX.Element {
   const { instances, loaded, refresh } = useInstances()
 
   const [instanceId, setInstanceId] = useState('')
+  const [source, setSource] = useState('modrinth')
   const [installed, setInstalled] = useState<InstalledMod[]>([])
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ModSearchHit[]>([])
   const [searching, setSearching] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const reqId = useRef(0)
 
   useEffect(() => {
     if (!loaded) refresh()
@@ -29,33 +27,37 @@ export default function Mods(): JSX.Element {
 
   const current = instances.find((i) => i.id === instanceId) ?? null
 
-  // Installierte Mods laden, sobald die Instanz wechselt.
+  const loadInstalled = (id: string): void => {
+    window.api
+      .invoke('mods:list', id)
+      .then(setInstalled)
+      .catch(() => setInstalled([]))
+  }
+
+  // Beim Instanzwechsel: installierte Mods + Standard-„beliebt"-Liste laden.
   useEffect(() => {
     if (!instanceId) return
-    let cancelled = false
-    window.api
-      .invoke('mods:list', instanceId)
-      .then((list) => !cancelled && setInstalled(list))
-      .catch(() => !cancelled && setInstalled([]))
-    return () => {
-      cancelled = true
-    }
+    loadInstalled(instanceId)
+    runSearch(query)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instanceId])
 
-  const handleSearch = async (): Promise<void> => {
-    if (!instanceId || !query.trim()) return
+  const runSearch = async (q: string): Promise<void> => {
+    if (!instanceId) return
+    const id = ++reqId.current
     setSearching(true)
     setError(null)
     try {
-      setResults(await window.api.invoke('mods:search', instanceId, query.trim()))
+      const hits = await window.api.invoke('mods:search', instanceId, q)
+      if (id === reqId.current) setResults(hits)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      if (id === reqId.current) setError(e instanceof Error ? e.message : String(e))
     } finally {
-      setSearching(false)
+      if (id === reqId.current) setSearching(false)
     }
   }
 
-  const handleInstall = async (hit: ModSearchHit): Promise<void> => {
+  const installMod = async (hit: ModSearchHit): Promise<void> => {
     setBusyId(hit.projectId)
     setError(null)
     try {
@@ -72,113 +74,131 @@ export default function Mods(): JSX.Element {
       await window.api.invoke('mods:setEnabled', instanceId, mod.fileName, !mod.enabled)
     )
   }
-
-  const remove = async (mod: InstalledMod): Promise<void> => {
+  const removeMod = async (mod: InstalledMod): Promise<void> => {
     setInstalled(await window.api.invoke('mods:remove', instanceId, mod.fileName))
   }
 
+  if (instances.length === 0) {
+    return (
+      <div className="stack">
+        <h1>Mods</h1>
+        <div className="empty">Lege zuerst unter „Instanzen“ eine Instanz an.</div>
+      </div>
+    )
+  }
+
+  const installedNames = new Set(installed.map((m) => m.projectId).filter(Boolean))
+
   return (
-    <div className="stack" style={{ maxWidth: 820 }}>
-      <h1>Mods</h1>
+    <div className="stack">
+      <div className="page-head">
+        <h1>Mods</h1>
+        <div className="row">
+          <Select
+            value={source}
+            onChange={setSource}
+            options={[{ value: 'modrinth', label: 'Quelle: Modrinth' }]}
+          />
+          <Select
+            value={instanceId}
+            onChange={setInstanceId}
+            options={instances.map((i) => ({
+              value: i.id,
+              label: `${i.name} · ${i.mcVersion}${i.loader ? ` · ${i.loader}` : ''}`
+            }))}
+          />
+        </div>
+      </div>
 
-      {instances.length === 0 ? (
-        <p style={{ color: 'var(--ink-soft)' }}>
-          Lege zuerst unter „Instanzen“ eine Instanz an.
-        </p>
-      ) : (
-        <>
-          <DoodleCard title="Instanz">
-            <div className="row">
-              <WiredCombo
-                value={instanceId}
-                onSelect={setInstanceId}
-                style={{ minWidth: 240 }}
-              >
-                {instances.map((i) => (
-                  <WiredItem key={i.id} value={i.id}>
-                    {i.name} · {i.mcVersion}
-                    {i.loader ? ` · ${i.loader}` : ''}
-                  </WiredItem>
-                ))}
-              </WiredCombo>
-              {current && !current.loader && (
-                <span style={{ color: 'var(--ink-faint)', fontSize: '0.85rem' }}>
-                  Vanilla-Instanz – Mods brauchen einen Loader.
-                </span>
-              )}
-            </div>
-          </DoodleCard>
-
-          <DoodleCard title="Mods suchen (Modrinth)">
-            <div className="row">
-              <WiredInput
-                value={query}
-                placeholder="z. B. Sodium, JEI …"
-                onValueChange={setQuery}
-              />
-              <WiredButton elevation={2} onClick={handleSearch} disabled={searching}>
-                {searching ? 'Suche …' : '🔍 Suchen'}
-              </WiredButton>
-            </div>
-            {error && <p style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
-
-            {results.length > 0 && (
-              <ul className="mod-list" style={{ marginTop: 12 }}>
-                {results.map((hit) => (
-                  <li key={hit.projectId} className="mod-row">
-                    {hit.iconUrl && (
-                      <img className="mod-row__icon" src={hit.iconUrl} alt="" />
-                    )}
-                    <div className="mod-row__info">
-                      <span className="mod-row__name">{hit.title}</span>
-                      <span className="mod-row__desc">{hit.description}</span>
-                      <span style={{ color: 'var(--ink-faint)', fontSize: '0.8rem' }}>
-                        von {hit.author} · {hit.downloads.toLocaleString('de-DE')} Downloads
-                      </span>
-                    </div>
-                    <WiredButton
-                      onClick={() => handleInstall(hit)}
-                      disabled={busyId === hit.projectId}
-                    >
-                      {busyId === hit.projectId ? 'läuft …' : '⤓ Installieren'}
-                    </WiredButton>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DoodleCard>
-
-          <DoodleCard title={`Installierte Mods (${installed.length})`}>
-            {installed.length === 0 ? (
-              <p style={{ color: 'var(--ink-soft)' }}>Noch keine Mods installiert.</p>
-            ) : (
-              <ul className="mod-list">
-                {installed.map((mod) => (
-                  <li
-                    key={mod.fileName}
-                    className={`mod-row ${mod.enabled ? '' : 'is-disabled'}`}
-                  >
-                    <div className="mod-row__info">
-                      <span className="mod-row__name">{mod.name ?? mod.fileName}</span>
-                      <span className="mod-row__desc">
-                        {mod.version ? `${mod.version} · ` : ''}
-                        {(mod.size / 1024 / 1024).toFixed(1)} MB
-                        {mod.enabled ? '' : ' · deaktiviert'}
-                      </span>
-                    </div>
-                    <div className="row">
-                      <WiredButton onClick={() => toggle(mod)}>
-                        {mod.enabled ? 'Deaktivieren' : 'Aktivieren'}
-                      </WiredButton>
-                      <WiredButton onClick={() => remove(mod)}>Entfernen</WiredButton>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DoodleCard>
-        </>
+      {current && !current.loader && (
+        <Card>
+          <span className="muted">
+            Diese Instanz ist Vanilla – Mods brauchen einen Loader (Fabric/Forge/Quilt).
+          </span>
+        </Card>
       )}
+
+      <div className="row">
+        <Input
+          value={query}
+          onChange={setQuery}
+          onEnter={() => runSearch(query.trim())}
+          placeholder="Mods durchsuchen … (z. B. Sodium, JEI)"
+          full
+        />
+        <Button onClick={() => runSearch(query.trim())} disabled={searching}>
+          Suchen
+        </Button>
+      </div>
+
+      {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
+
+      {searching ? (
+        <div className="row">
+          <Spinner /> <span className="muted">Lädt …</span>
+        </div>
+      ) : (
+        <ul className="mod-list">
+          {results.map((hit) => {
+            const already = installedNames.has(hit.projectId)
+            return (
+              <li key={hit.projectId} className="mod-row">
+                <ModIcon url={hit.iconUrl} />
+                <div className="mod-row__info">
+                  <span className="mod-row__name">{hit.title}</span>
+                  <span className="mod-row__desc">{hit.description}</span>
+                  <span className="mod-row__by">
+                    von {hit.author} · {hit.downloads.toLocaleString('de-DE')} Downloads
+                  </span>
+                </div>
+                <Button
+                  small
+                  variant={already ? 'ghost' : 'secondary'}
+                  onClick={() => installMod(hit)}
+                  disabled={busyId === hit.projectId || already}
+                >
+                  {busyId === hit.projectId
+                    ? 'läuft …'
+                    : already
+                      ? 'installiert ✓'
+                      : '⤓ Installieren'}
+                </Button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <Card>
+        <h3 className="card__title">Installierte Mods ({installed.length})</h3>
+        {installed.length === 0 ? (
+          <span className="muted">Noch keine Mods installiert.</span>
+        ) : (
+          <ul className="mod-list">
+            {installed.map((mod) => (
+              <li
+                key={mod.fileName}
+                className={`mod-row ${mod.enabled ? '' : 'is-disabled'}`}
+              >
+                <div className="mod-row__info">
+                  <span className="mod-row__name">{mod.name ?? mod.fileName}</span>
+                  <span className="mod-row__by">
+                    {mod.version ? `${mod.version} · ` : ''}
+                    {(mod.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                </div>
+                {!mod.enabled && <Chip>deaktiviert</Chip>}
+                <Button small variant="ghost" onClick={() => toggle(mod)}>
+                  {mod.enabled ? 'Deaktivieren' : 'Aktivieren'}
+                </Button>
+                <Button small variant="danger" onClick={() => removeMod(mod)}>
+                  Entfernen
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   )
 }

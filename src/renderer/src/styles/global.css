@@ -12,67 +12,89 @@ body,
 }
 
 body {
-  color: var(--ink);
-  font-family: var(--font-hand);
-  font-size: 18px;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 14px;
   line-height: 1.5;
   -webkit-user-select: none;
   user-select: none;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  margin: 0 0 0.3em;
-  letter-spacing: 0.5px;
+  font-weight: 650;
+  margin: 0 0 0.4em;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 h1 {
-  font-size: 2.1rem;
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1.2rem;
+}
+h3 {
+  font-size: 1rem;
 }
 
 a {
-  color: var(--accent-deep);
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
 
-/* Wobble-Utility: leichtes „handgezeichnetes" Zittern für Ränder/Deko.
-   Sparsam einsetzen — verzerrt auch Text. */
-.wobble {
-  filter: url(#doodle-wobble);
+img {
+  -webkit-user-drag: none;
 }
 
-/* Custom Scrollbar im Tinten-Look */
+/* Scrollbar */
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--ink-faint);
-  border-radius: 6px;
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: padding-box;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* wired-elements Grundfarbe an die Tinte angleichen */
-wired-button,
-wired-card,
-wired-input,
-wired-combo,
-wired-item,
-wired-checkbox,
-wired-slider,
-wired-progress,
-wired-tab,
-wired-dialog {
-  color: var(--ink);
-  --wired-item-selected-bg: var(--accent);
+/* Layout-Helfer */
+.stack > * + * {
+  margin-top: 16px;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.spacer {
+  flex: 1;
+}
+.muted {
+  color: var(--text-muted);
+}
+.text-soft {
+  color: var(--text-soft);
 }

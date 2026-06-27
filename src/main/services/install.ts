@@ -199,7 +199,13 @@ export async function installInstance(
     const versionMeta = await getVersionMeta(instance.mcVersion)
 
     send(sender, { instanceId, phase: 'minecraft', progress: 0, label: instance.mcVersion })
-    const rootTask = installTask(versionMeta, paths.minecraft, { side: 'client' })
+    const rootTask = installTask(versionMeta, paths.minecraft, {
+      side: 'client',
+      // Begrenzte Parallelität: zu viele gleichzeitige Verbindungen zur
+      // Mojang-CDN führen sonst zu ECONNRESET-Abbrüchen mitten im Download.
+      assetsDownloadConcurrency: 8,
+      librariesDownloadConcurrency: 8
+    })
     const resolved = await runTracked(sender, instanceId, 'minecraft', rootTask)
 
     const javaComponent = await provisionJava(sender, instanceId, resolved)

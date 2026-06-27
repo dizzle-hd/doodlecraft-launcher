@@ -193,6 +193,24 @@ export interface IpcInvokeMap {
     result: string
   }
 
+  // Fenstersteuerung (rahmenloses Fenster, eigene Titelleiste)
+  'window:minimize': {
+    args: []
+    result: void
+  }
+  'window:toggleMaximize': {
+    args: []
+    result: boolean
+  }
+  'window:close': {
+    args: []
+    result: void
+  }
+  'window:isMaximized': {
+    args: []
+    result: boolean
+  }
+
   'auth:list': {
     args: []
     result: Account[]
@@ -335,6 +353,7 @@ export interface IpcEventMap {
   'install:progress': InstallProgress
   'launch:status': LaunchStatus
   'launch:log': LogChunk
+  'window:maximizedChanged': boolean
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

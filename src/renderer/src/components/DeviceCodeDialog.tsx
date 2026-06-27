@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { DeviceCodeInfo } from '@shared/ipc'
-import { WiredButton } from './wired'
+import { Modal, Button, Chip, Spinner } from './ui'
 
 export interface DeviceCodeDialogProps {
   code: DeviceCodeInfo | null
@@ -10,8 +10,7 @@ export interface DeviceCodeDialogProps {
 
 /**
  * Modaler Anmelde-Dialog für den Microsoft Device-Code-Login. Zeigt den Code,
- * öffnet die Microsoft-Seite im Standardbrowser (über den window-open-Handler
- * des Main-Prozesses -> shell.openExternal) und kopiert den Code per Klick.
+ * öffnet die Microsoft-Seite im Standardbrowser und kopiert den Code per Klick.
  */
 export default function DeviceCodeDialog({
   code,
@@ -27,51 +26,42 @@ export default function DeviceCodeDialog({
     setTimeout(() => setCopied(false), 1500)
   }
 
+  const title = error
+    ? 'Anmeldung fehlgeschlagen'
+    : code
+      ? 'Mit Microsoft anmelden'
+      : 'Anmeldung wird gestartet …'
+
   return (
-    <div className="modal-overlay" onClick={error ? onClose : undefined}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="doodle-card__border wobble" aria-hidden="true" />
+    <Modal open onClose={onClose} title={title} width={460}>
+      {error ? (
+        <p style={{ color: 'var(--danger)' }}>{error}</p>
+      ) : !code ? (
+        <div className="row">
+          <Spinner /> <span className="muted">Der Anmeldecode wird angefordert …</span>
+        </div>
+      ) : (
+        <>
+          <p className="text-soft">
+            Öffne die Microsoft-Seite und gib diesen Code ein. Sobald du dort
+            bestätigt hast, geht es hier automatisch weiter.
+          </p>
 
-        {error ? (
-          <>
-            <h2 style={{ color: 'var(--danger)' }}>Anmeldung fehlgeschlagen</h2>
-            <p>{error}</p>
-            <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <WiredButton onClick={onClose}>Schließen</WiredButton>
-            </div>
-          </>
-        ) : !code ? (
-          <>
-            <h2>Anmeldung wird gestartet …</h2>
-            <p>Einen Moment, der Anmeldecode wird angefordert.</p>
-          </>
-        ) : (
-          <>
-            <h2>Mit Microsoft anmelden</h2>
-            <p>
-              Öffne die Microsoft-Seite und gib diesen Code ein. Sobald du dort
-              bestätigt hast, geht es hier automatisch weiter.
-            </p>
+          <button className="device-code" onClick={copy} title="Code kopieren">
+            {code.userCode}
+            <span className="device-code__hint">
+              {copied ? 'kopiert ✓' : 'klick zum Kopieren'}
+            </span>
+          </button>
 
-            <button className="device-code" onClick={copy} title="Code kopieren">
-              {code.userCode}
-              <span className="device-code__hint">
-                {copied ? 'kopiert ✓' : 'klick zum Kopieren'}
-              </span>
-            </button>
-
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <span className="doodle-chip">wartet auf Bestätigung …</span>
-              <WiredButton
-                elevation={2}
-                onClick={() => window.open(code.directUri, '_blank')}
-              >
-                Im Browser öffnen ↗
-              </WiredButton>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <Chip>wartet auf Bestätigung …</Chip>
+            <Button variant="primary" onClick={() => window.open(code.directUri, '_blank')}>
+              Im Browser öffnen ↗
+            </Button>
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }

@@ -1,148 +1,182 @@
 import { useEffect, useState } from 'react'
-import type { LaunchStatus } from '@shared/ipc'
 import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
-import DoodleCard from '../components/DoodleCard'
+import { Button, Chip, ProgressBar, Select } from '../components/ui'
 import SkinHead from '../components/SkinHead'
-import { WiredButton, WiredCombo, WiredItem } from '../components/wired'
 
-/** Menschlicher Text + ob ein Start-Status „beschäftigt" bedeutet. */
-function describeStatus(status: LaunchStatus | undefined): {
-  text: string
-  busy: boolean
-} {
-  if (!status) return { text: '', busy: false }
-  switch (status.state) {
-    case 'launching':
-      return { text: 'Wird gestartet …', busy: true }
-    case 'running':
-      return { text: 'Läuft – viel Spaß!', busy: true }
-    case 'exited':
-      return {
-        text:
-          status.code === 0
-            ? 'Spiel beendet.'
-            : `Spiel beendet (Code ${status.code}).${
-                status.error ? ' Absturz – siehe Crash-Report.' : ''
-              }`,
-        busy: false
-      }
-    case 'error':
-      return { text: `Start fehlgeschlagen: ${status.error ?? 'unbekannt'}`, busy: false }
-    default:
-      return { text: '', busy: false }
-  }
+const PHASE_LABEL: Record<string, string> = {
+  minecraft: 'Minecraft wird geladen',
+  java: 'Java wird beschafft',
+  loader: 'Mod-Loader wird installiert',
+  done: 'Fertig',
+  error: 'Fehler'
 }
 
-/**
- * Start-Seite. Instanz wählen, aktiver Account, großer „Spielen"-Button (M5).
- */
-export default function Play(): JSX.Element {
-  const { instances, loaded, launchStatus, refresh, launch } = useInstances()
+export default function Play({
+  onNavigate
+}: {
+  onNavigate: (id: string) => void
+}): JSX.Element {
+  const {
+    instances,
+    loaded,
+    progress,
+    launchStatus,
+    refresh,
+    install,
+    launch,
+    setProgress,
+    setLaunchStatus
+  } = useInstances()
   const { accounts, activeId, refresh: refreshAccounts } = useAccounts()
-  const { setLaunchStatus } = useInstances()
 
   const [selectedId, setSelectedId] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loaded) refresh()
     refreshAccounts()
-    return window.api.on('launch:status', setLaunchStatus)
-  }, [loaded, refresh, refreshAccounts, setLaunchStatus])
+    const offP = window.api.on('install:progress', setProgress)
+    const offL = window.api.on('launch:status', setLaunchStatus)
+    return () => {
+      offP()
+      offL()
+    }
+  }, [loaded, refresh, refreshAccounts, setProgress, setLaunchStatus])
 
-  // Standardmäßig die zuletzt gespielte Instanz vorauswählen.
   useEffect(() => {
     if (!selectedId && instances.length > 0) setSelectedId(instances[0].id)
   }, [instances, selectedId])
 
   const current = instances.find((i) => i.id === selectedId) ?? instances[0] ?? null
   const account = accounts.find((a) => a.id === activeId) ?? null
-  const status = current ? launchStatus[current.id] : undefined
-  const { text: statusText, busy } = describeStatus(status)
-  const canPlay = Boolean(current?.installed && account) && !busy
 
-  const hint = !current?.installed
-    ? 'Diese Instanz ist noch nicht installiert (siehe „Instanzen“).'
-    : !account
-      ? 'Bitte zuerst einen Account auswählen (siehe „Accounts“).'
+  const prog = current ? progress[current.id] : undefined
+  const installing = prog !== undefined && prog.phase !== 'done' && prog.phase !== 'error'
+  const launch_ = current ? launchStatus[current.id] : undefined
+  const running = launch_?.state === 'launching' || launch_?.state === 'running'
+  const busy = installing || running
+
+  const handlePlay = async (): Promise<void> => {
+    if (!current) return
+    if (!account) {
+      onNavigate('accounts')
+      return
+    }
+    setError(null)
+    try {
+      if (!current.installed) {
+        await install(current.id)
+      }
+      await launch(current.id)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  if (!current) {
+    return (
+      <div className="stack">
+        <h1>Spielen</h1>
+        <div className="empty">
+          Noch keine Instanz. Lege unter „Instanzen“ deine erste an.
+        </div>
+      </div>
+    )
+  }
+
+  const statusLine = running
+    ? launch_?.state === 'running'
+      ? 'Läuft – viel Spaß!'
+      : 'Wird gestartet …'
+    : launch_?.state === 'exited'
+      ? `Spiel beendet${launch_.code ? ` (Code ${launch_.code})` : ''}.`
       : ''
 
   return (
-    <div className="stack" style={{ maxWidth: 640 }}>
-      <h1>Spielen</h1>
+    <div className="stack" style={{ maxWidth: 720 }}>
+      <div className="page-head">
+        <h1>Spielen</h1>
+        {instances.length > 1 && (
+          <Select
+            value={current.id}
+            onChange={setSelectedId}
+            options={instances.map((i) => ({
+              value: i.id,
+              label: `${i.name} · ${i.mcVersion}`
+            }))}
+          />
+        )}
+      </div>
 
-      <DoodleCard title="Bereit?">
-        {current ? (
-          <div className="play-summary">
-            {instances.length > 1 && (
-              <div className="row" style={{ marginBottom: 10 }}>
-                <span style={{ color: 'var(--ink-soft)' }}>Instanz:</span>
-                <WiredCombo
-                  value={current.id}
-                  onSelect={setSelectedId}
-                  style={{ minWidth: 220 }}
-                >
-                  {instances.map((i) => (
-                    <WiredItem key={i.id} value={i.id}>
-                      {i.name} · {i.mcVersion}
-                    </WiredItem>
-                  ))}
-                </WiredCombo>
-              </div>
-            )}
-
-            <div className="instance-row__info">
-              <span className="instance-row__name">{current.name}</span>
-              <div className="row" style={{ gap: 8 }}>
-                <span className="doodle-chip">{current.mcVersion}</span>
-                <span className="doodle-chip">
-                  {current.installed ? 'installiert ✓' : 'nicht installiert'}
-                </span>
-              </div>
-            </div>
-
-            <div className="row" style={{ marginTop: 6 }}>
-              {account ? (
-                <>
-                  <SkinHead uuid={account.uuid} name={account.name} size={28} />
-                  <span>{account.name}</span>
-                </>
-              ) : (
-                <span style={{ color: 'var(--ink-soft)' }}>Kein Account ausgewählt</span>
-              )}
-            </div>
-
-            <div style={{ marginTop: 18 }}>
-              <WiredButton
-                elevation={3}
-                disabled={!canPlay}
-                onClick={() => current && launch(current.id)}
-              >
-                {busy ? '▶ läuft …' : '▶ Spielen'}
-              </WiredButton>
-            </div>
-
-            {(statusText || hint) && (
-              <p
-                style={{
-                  color:
-                    status?.state === 'error'
-                      ? 'var(--danger)'
-                      : 'var(--ink-faint)',
-                  fontSize: '0.85rem',
-                  marginTop: 10
-                }}
-              >
-                {statusText || hint}
-              </p>
-            )}
+      <div className="play-hero">
+        <div className="row" style={{ gap: 14 }}>
+          <div className="instance-card__icon" style={{ width: 56, height: 56 }}>
+            🎮
           </div>
-        ) : (
-          <p style={{ color: 'var(--ink-soft)' }}>
-            Noch keine Instanz vorhanden. Lege unter „Instanzen“ eine an.
+          <div>
+            <div className="play-hero__title">{current.name}</div>
+            <div className="row" style={{ gap: 6, marginTop: 4 }}>
+              <Chip>{current.mcVersion}</Chip>
+              {current.loader && (
+                <Chip>
+                  {current.loader}
+                  {current.loaderVersion ? ` ${current.loaderVersion}` : ''}
+                </Chip>
+              )}
+              <Chip tone={current.installed ? 'accent' : 'default'}>
+                {current.installed ? 'installiert' : 'nicht installiert'}
+              </Chip>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          {account ? (
+            <>
+              <SkinHead uuid={account.uuid} name={account.name} size={26} />
+              <span className="text-soft">{account.name}</span>
+            </>
+          ) : (
+            <span className="muted">Kein Account ausgewählt</span>
+          )}
+        </div>
+
+        {installing && prog && (
+          <div className="stack" style={{ gap: 6 }}>
+            <ProgressBar value={prog.progress} />
+            <span className="muted" style={{ fontSize: '0.82rem' }}>
+              {PHASE_LABEL[prog.phase] ?? prog.phase} · {Math.round(prog.progress * 100)}%
+            </span>
+          </div>
+        )}
+
+        <div className="row">
+          <Button
+            variant="primary"
+            className="play-btn"
+            disabled={busy}
+            onClick={handlePlay}
+          >
+            {installing
+              ? 'Installiere …'
+              : running
+                ? 'Läuft …'
+                : !account
+                  ? 'Account wählen'
+                  : current.installed
+                    ? '▶ Spielen'
+                    : '⤓ Installieren & Spielen'}
+          </Button>
+          {statusLine && <span className="text-soft">{statusLine}</span>}
+        </div>
+
+        {(error || prog?.phase === 'error') && (
+          <p style={{ color: 'var(--danger)', margin: 0 }}>
+            {error ?? prog?.error ?? 'Installation fehlgeschlagen.'}
           </p>
         )}
-      </DoodleCard>
+      </div>
     </div>
   )
 }

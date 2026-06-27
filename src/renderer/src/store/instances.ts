@@ -106,11 +106,14 @@ export const useInstances = create<InstancesState>((set, get) => {
     install: async (id) => {
       try {
         await window.api.invoke('instances:install', id)
-      } finally {
+        // Nur bei Erfolg den Fortschritt aufräumen.
         await reload()
-        // Fortschritts-Eintrag nach Abschluss aufräumen.
         const { [id]: _done, ...rest } = get().progress
         set({ progress: rest })
+      } catch (e) {
+        // Bei Fehler den Fortschritt (phase 'error') sichtbar lassen.
+        await reload()
+        throw e
       }
     },
 

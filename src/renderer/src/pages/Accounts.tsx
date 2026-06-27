@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { DeviceCodeInfo } from '@shared/ipc'
 import { useAccounts } from '../store/accounts'
-import DoodleCard from '../components/DoodleCard'
+import { Button, Card, Chip } from '../components/ui'
 import SkinHead from '../components/SkinHead'
 import DeviceCodeDialog from '../components/DeviceCodeDialog'
-import { WiredButton } from '../components/wired'
 
 export default function Accounts(): JSX.Element {
   const { accounts, activeId, loaded, refresh, setActive, remove, loginMicrosoft } =
@@ -16,7 +15,6 @@ export default function Accounts(): JSX.Element {
 
   useEffect(() => {
     if (!loaded) refresh()
-    // Device-Code-Events aus dem Main empfangen.
     return window.api.on('auth:deviceCode', setCode)
   }, [loaded, refresh])
 
@@ -41,51 +39,45 @@ export default function Accounts(): JSX.Element {
 
   return (
     <div className="stack" style={{ maxWidth: 720 }}>
-      <h1>Accounts</h1>
-      <p style={{ color: 'var(--ink-soft)', marginTop: -8 }}>
-        Melde dich mit deinem Microsoft-Account an — ganz ohne eigene Azure-App.
-      </p>
-
-      <DoodleCard title="Account hinzufügen">
-        <div className="row">
-          <WiredButton elevation={2} onClick={handleMicrosoft} disabled={busy}>
-            {busy ? 'Anmeldung läuft …' : '＋ Microsoft-Login'}
-          </WiredButton>
-        </div>
-      </DoodleCard>
-
-      <DoodleCard title={`Gespeicherte Accounts (${accounts.length})`}>
-        {accounts.length === 0 ? (
-          <p style={{ color: 'var(--ink-soft)' }}>
-            Noch keine Accounts. Füge oben einen hinzu.
+      <div className="page-head">
+        <div>
+          <h1>Accounts</h1>
+          <p className="page-sub">
+            Melde dich mit deinem Microsoft-Account an — ganz ohne eigene Azure-App.
           </p>
+        </div>
+        <Button variant="primary" onClick={handleMicrosoft} disabled={busy}>
+          {busy ? 'Anmeldung läuft …' : '＋ Microsoft-Login'}
+        </Button>
+      </div>
+
+      <Card>
+        {accounts.length === 0 ? (
+          <div className="empty">Noch keine Accounts. Melde dich oben an.</div>
         ) : (
           <ul className="account-list">
             {accounts.map((a) => (
-              <li
-                key={a.id}
-                className={`account-row ${a.id === activeId ? 'is-active' : ''}`}
-              >
+              <li key={a.id} className="account-row">
                 <SkinHead uuid={a.uuid} name={a.name} />
                 <div className="account-row__info">
                   <span className="account-row__name">{a.name}</span>
-                  <span className="doodle-chip">Microsoft</span>
+                  <Chip>Microsoft</Chip>
                 </div>
-                <div className="row">
-                  {a.id === activeId ? (
-                    <span className="account-row__active">aktiv ✓</span>
-                  ) : (
-                    <WiredButton onClick={() => setActive(a.id)}>
-                      Auswählen
-                    </WiredButton>
-                  )}
-                  <WiredButton onClick={() => remove(a.id)}>Entfernen</WiredButton>
-                </div>
+                {a.id === activeId ? (
+                  <span className="account-row__active">aktiv ✓</span>
+                ) : (
+                  <Button small onClick={() => setActive(a.id)}>
+                    Auswählen
+                  </Button>
+                )}
+                <Button small variant="danger" onClick={() => remove(a.id)}>
+                  Entfernen
+                </Button>
               </li>
             ))}
           </ul>
         )}
-      </DoodleCard>
+      </Card>
 
       {(busy || error) && (
         <DeviceCodeDialog code={code} error={error} onClose={closeDialog} />

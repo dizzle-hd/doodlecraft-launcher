@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import SvgDefs from './SvgDefs'
+import TitleBar from './TitleBar'
 
 export interface NavItem {
   id: string
   label: string
+  icon: ReactNode
 }
 
 export interface AppShellProps {
@@ -15,8 +16,8 @@ export interface AppShellProps {
 }
 
 /**
- * Grundlayout des Launchers: Papier-Hintergrund, Sidebar mit Navigation,
- * scrollbarer Content-Bereich. Rendert die globalen SVG-Defs einmalig.
+ * Grundlayout: rahmenlose Titelleiste oben, links die Navigation, rechts der
+ * scrollbare Content-Bereich.
  */
 export default function AppShell({
   items,
@@ -26,23 +27,27 @@ export default function AppShell({
   children
 }: AppShellProps): JSX.Element {
   return (
-    <div className="shell paper-bg">
-      <SvgDefs />
-      <aside className="shell__sidebar">
-        <div className="shell__brand">DoodleCraft</div>
-        {items.map((item) => (
-          <button
-            key={item.id}
-            className={`shell__nav-item ${active === item.id ? 'is-active' : ''}`}
-            onClick={() => onSelect(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-        <div style={{ flex: 1 }} />
-        {footer}
-      </aside>
-      <main className="shell__content">{children}</main>
+    <div className="shell">
+      <TitleBar />
+      <div className="shell__body">
+        <aside className="sidebar">
+          <nav className="sidebar__nav">
+            {items.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${active === item.id ? 'is-active' : ''}`}
+                onClick={() => onSelect(item.id)}
+              >
+                <span className="nav-item__icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="spacer" />
+          {footer}
+        </aside>
+        <main className="content">{children}</main>
+      </div>
     </div>
   )
 }

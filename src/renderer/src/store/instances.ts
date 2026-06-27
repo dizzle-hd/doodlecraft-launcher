@@ -23,6 +23,8 @@ interface InstancesState {
   create: (input: CreateInstanceInput) => Promise<Instance>
   remove: (id: string) => Promise<void>
   duplicate: (id: string) => Promise<void>
+  rename: (id: string, name: string) => Promise<void>
+  openFolder: (id: string) => Promise<void>
   install: (id: string) => Promise<void>
   launch: (id: string) => Promise<void>
   setProgress: (p: InstallProgress) => void
@@ -90,6 +92,15 @@ export const useInstances = create<InstancesState>((set, get) => {
     duplicate: async (id) => {
       await window.api.invoke('instances:duplicate', id)
       await reload()
+    },
+
+    rename: async (id, name) => {
+      await window.api.invoke('instances:rename', id, name)
+      await reload()
+    },
+
+    openFolder: async (id) => {
+      await window.api.invoke('instances:openFolder', id)
     },
 
     install: async (id) => {

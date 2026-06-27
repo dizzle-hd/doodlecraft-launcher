@@ -136,3 +136,13 @@ export function patchInstance(id: string, patch: Partial<Instance>): Instance {
   writeInstance(next)
   return next
 }
+
+/** Benennt eine Instanz um (nur Anzeigename; Ordner/ID bleiben stabil). */
+export function renameInstance(id: string, name: string): Instance[] {
+  const trimmed = name.trim()
+  if (!trimmed) {
+    throw new Error('Name darf nicht leer sein.')
+  }
+  patchInstance(id, { name: trimmed })
+  return listInstances()
+}

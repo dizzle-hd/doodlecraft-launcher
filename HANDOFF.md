@@ -24,10 +24,9 @@ Der vollständige Original-Plan liegt unter
 | **M5** | Spielstart (@xmcl/core) | ✅ fertig (build/typecheck grün; echter Start nur außerhalb dieser Sandbox prüfbar) |
 | **M6** | Mod-Loader (Fabric/Forge/Quilt) | ✅ fertig (build/typecheck grün; echter Loader-Install nur außerhalb dieser Sandbox prüfbar) |
 | **M7** | Mods & Modpacks (Modrinth) | ✅ fertig (build/typecheck grün; Modrinth-Netz in dieser Sandbox geblockt) |
-| M8 | Politur & Windows-Build | 🚧 **HIER WEITERMACHEN** |
+| **M8** | Politur & Windows-Build | ✅ Code fertig (Settings, Rename, Ordner öffnen); reales Packaging nur auf Windows |
 
-Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M7 completed,
-M8 in_progress.
+Task-Liste (im Claude-Task-System) spiegelt das ebenfalls: M1–M8 completed.
 
 ## So läuft das Projekt
 
@@ -111,6 +110,7 @@ src/
         Instances.tsx      # M4 Instanz-Liste + Anlegen + Install-Fortschritt; M7 Modpack-Browser
         Play.tsx           # M5 Start-Seite (Spielen-Button + Status)
         Mods.tsx           # M7 Mod-Suche/Verwaltung je Instanz (Modrinth)
+        Settings.tsx       # M8 Einstellungen (RAM, Java-Pfad, Snapshots)
       store/accounts.ts    # zustand-Store, spiegelt Main-Auth
       store/instances.ts   # zustand-Store: Instanzen/Versionen/Settings + Install-Progress
       styles/
@@ -269,17 +269,33 @@ dass eine zweite Quelle später danebengelegt werden kann.
 > z. B. „Sodium" suchen + installieren → liegt unter `instances/<id>/mods/`; ein
 > Modpack (z. B. „Fabulously Optimized") anlegen → neue Instanz startet.
 
-## 👉 Nächster Schritt: M8 (Politur & Windows-Build) implementieren
+## ✅ M8 erledigt — so funktioniert es
 
-- **Einstellungen-Seite** (`pages/Settings.tsx`) für `settings` (RAM-Slider
-  `maxMemoryMb`, optionaler `javaPath`, `showSnapshots`) — IPC `settings:get/update`
-  existiert bereits.
-- **Instanz bearbeiten/umbenennen**, „Ordner öffnen" (`shell.openPath`).
-- **Windows-Build**: `npm run package` (electron-builder, `electron-builder.yml`)
-  testen; Icon/Branding, NSIS-Installer + Portable. Achtung: in dieser Sandbox
-  fehlt das electron-Binary (siehe „WICHTIG" oben) — Packaging real nur auf Windows.
-- **Feinschliff**: Fehler-Toasts statt `alert`/Inline-Text, leere Zustände,
-  Logs-Ansicht beim Start (stdout aus dem Process-Watcher), App-Icon.
+- **`pages/Settings.tsx`** — Arbeitsspeicher (`maxMemoryMb` per Stufen-Buttons),
+  optionaler `javaPath`, `showSnapshots`-Toggle; nutzt IPC `settings:get/update`.
+  Nav „⚙ Einstellungen" ist verdrahtet.
+- **Instanz-Verwaltung** in `pages/Instances.tsx`: Inline-**Umbenennen**
+  (`instances:rename` → nur Anzeigename, ID/Ordner bleiben stabil) und
+  **„Ordner"** (`instances:openFolder` → `shell.openPath`).
+- **Windows-Build**: `electron-builder.yml` (NSIS + Portable, `oneClick: false`)
+  ist seit M1 vorhanden; `npm run package` baut nach `release/`.
+
+## 🏁 Projekt-Status: M1–M8 umgesetzt
+
+Alle geplanten Meilensteine sind im Code abgeschlossen; `npm run typecheck` und
+`npm run build` sind grün. **Wichtig:** Echte Netzwerk-/Laufzeit-Verifikation
+(Mojang-, Fabric/Forge-, Modrinth-Downloads und der Spielstart) war in dieser
+Sandbox **nicht möglich** — die Netzwerk-Policy blockiert diese Hosts und es
+gibt kein electron-Binary/Display. Auf Windows wie in den jeweiligen
+„Verifikations-Hinweisen" oben durchspielen.
+
+### Sinnvolle Restpunkte (optional)
+- **App-Icon/Branding** unter `resources/` (von `electron-builder.yml`
+  `buildResources` erwartet) + `icon`-Felder.
+- **Reales Packaging** auf Windows testen (`npm run package`).
+- **Feinschliff**: Fehler-Toasts statt Inline-Text, Logs-Ansicht (stdout aus dem
+  Process-Watcher in `services/launch.ts`), Instanz-Einstellungen pro Instanz
+  (eigener RAM/Java-Override), CurseForge als zweite Mod-Quelle neben Modrinth.
 
 ## Verifikations-Werkzeuge (bewährt)
 

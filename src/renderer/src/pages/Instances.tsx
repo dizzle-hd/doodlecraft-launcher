@@ -39,6 +39,8 @@ export default function Instances(): JSX.Element {
     create,
     remove,
     duplicate,
+    rename,
+    openFolder,
     install,
     launch,
     setProgress,
@@ -282,6 +284,8 @@ export default function Instances(): JSX.Element {
                 onLaunch={() => launch(inst.id)}
                 onDuplicate={() => duplicate(inst.id)}
                 onRemove={() => remove(inst.id)}
+                onRename={(newName) => rename(inst.id, newName)}
+                onOpenFolder={() => openFolder(inst.id)}
               />
             ))}
           </ul>
@@ -299,6 +303,8 @@ interface RowProps {
   onLaunch: () => void
   onDuplicate: () => void
   onRemove: () => void
+  onRename: (name: string) => void
+  onOpenFolder: () => void
 }
 
 function InstanceRow({
@@ -308,17 +314,43 @@ function InstanceRow({
   onInstall,
   onLaunch,
   onDuplicate,
-  onRemove
+  onRemove,
+  onRename,
+  onOpenFolder
 }: RowProps): JSX.Element {
   const installing =
     progress !== undefined && progress.phase !== 'done' && progress.phase !== 'error'
   const running = launchState === 'launching' || launchState === 'running'
   const busy = installing || running
 
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(instance.name)
+
+  const commitRename = (): void => {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== instance.name) onRename(trimmed)
+    setEditing(false)
+  }
+
   return (
     <li className="instance-row">
       <div className="instance-row__info">
-        <span className="instance-row__name">{instance.name}</span>
+        {editing ? (
+          <div className="row">
+            <WiredInput value={draft} onValueChange={setDraft} />
+            <WiredButton onClick={commitRename}>OK</WiredButton>
+            <WiredButton
+              onClick={() => {
+                setDraft(instance.name)
+                setEditing(false)
+              }}
+            >
+              Abbrechen
+            </WiredButton>
+          </div>
+        ) : (
+          <span className="instance-row__name">{instance.name}</span>
+        )}
         <div className="row" style={{ gap: 8 }}>
           <span className="doodle-chip">{instance.mcVersion}</span>
           {instance.loader && (
@@ -346,6 +378,10 @@ function InstanceRow({
         <WiredButton onClick={onInstall} disabled={busy}>
           {installing ? 'läuft …' : instance.installed ? 'Reparieren' : '⤓ Installieren'}
         </WiredButton>
+        <WiredButton onClick={() => setEditing(true)} disabled={busy || editing}>
+          Umbenennen
+        </WiredButton>
+        <WiredButton onClick={onOpenFolder}>Ordner</WiredButton>
         <WiredButton onClick={onDuplicate} disabled={busy}>
           Duplizieren
         </WiredButton>

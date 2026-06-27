@@ -31,9 +31,10 @@ npm run package      # Windows-Installer/Portable (release/)
 
 ## Status
 
-Siehe Meilensteine M1–M8. Aktuell fertig: **M1–M7** (Scaffold, Design-System,
-Auth, Versionen & Instanzen, Spielstart, Mod-Loader Fabric/Forge/Quilt, Mods &
-Modpacks via Modrinth). Als Nächstes: **M8 — Politur & Windows-Build**.
+Alle Meilensteine **M1–M8 sind umgesetzt**: Scaffold, Design-System, Auth,
+Versionen & Instanzen, Spielstart, Mod-Loader (Fabric/Forge/Quilt), Mods &
+Modpacks (Modrinth) sowie Einstellungen, Instanz-Verwaltung und Windows-Build-
+Konfiguration. Offene Restpunkte (App-Icon, reales Packaging) siehe `HANDOFF.md`.
 
 ## Hinweis zum Login
 

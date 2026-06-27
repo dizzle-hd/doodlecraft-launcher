@@ -245,6 +245,15 @@ export interface IpcInvokeMap {
     args: [instanceId: string]
     result: Instance[]
   }
+  'instances:rename': {
+    args: [instanceId: string, name: string]
+    result: Instance[]
+  }
+  /** Öffnet den Instanz-Ordner im Datei-Explorer des Systems. */
+  'instances:openFolder': {
+    args: [instanceId: string]
+    result: void
+  }
   'instances:duplicate': {
     args: [instanceId: string]
     result: Instance[]

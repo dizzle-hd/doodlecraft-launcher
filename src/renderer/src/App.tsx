@@ -5,6 +5,7 @@ import Accounts from './pages/Accounts'
 import Instances from './pages/Instances'
 import Mods from './pages/Mods'
 import Play from './pages/Play'
+import Settings from './pages/Settings'
 import SkinHead from './components/SkinHead'
 import { useAccounts } from './store/accounts'
 
@@ -57,14 +58,7 @@ export default function App(): JSX.Element {
       {active === 'mods' && <Mods />}
       {active === 'gallery' && <Gallery />}
       {active === 'accounts' && <Accounts />}
-      {active === 'settings' && (
-        <div className="stack">
-          <h1>Einstellungen</h1>
-          <p style={{ color: 'var(--ink-soft)' }}>
-            Diese Seite folgt in einem späteren Meilenstein.
-          </p>
-        </div>
-      )}
+      {active === 'settings' && <Settings />}
     </AppShell>
   )
 }

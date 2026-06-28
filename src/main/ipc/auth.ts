@@ -4,9 +4,9 @@ import {
   getActiveAccount,
   setActiveAccount,
   removeAccount,
-  loginMicrosoft,
-  addOfflineAccount
+  loginMicrosoft
 } from '../services/auth'
+import { fetchSkin } from '../services/skin'
 
 /** IPC-Handler rund um Accounts/Login. */
 export function registerAuthHandlers(): void {
@@ -14,9 +14,10 @@ export function registerAuthHandlers(): void {
   handle('auth:getActive', () => getActiveAccount())
   handle('auth:setActive', (_ctx, accountId) => setActiveAccount(accountId))
   handle('auth:remove', (_ctx, accountId) => removeAccount(accountId))
-  handle('auth:addOffline', (_ctx, name) => addOfflineAccount(name))
 
   handle('auth:loginMicrosoft', (ctx) =>
     loginMicrosoft((info) => emit(ctx.sender, 'auth:deviceCode', info))
   )
+
+  handle('skin:get', (_ctx, uuid) => fetchSkin(uuid))
 }

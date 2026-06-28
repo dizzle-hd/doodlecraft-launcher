@@ -22,6 +22,14 @@ npm run build        # Production-Build (out/)
 npm run package      # Windows-Installer/Portable (release/)
 ```
 
+## Windows-Build (CI)
+
+Der GitHub-Workflow `.github/workflows/build.yml` baut bei jedem Push (master/
+`claude/**`), bei Pull Requests und manuell automatisch das **NSIS-Setup** und
+die **Portable**-Version auf `windows-latest` und lädt sie als Artefakt hoch.
+Bei einem Tag `v*` (z. B. `v0.1.0`) wird zusätzlich ein GitHub-Release mit den
+Installern angelegt.
+
 ## Architektur
 
 - `src/main` — Electron Main-Prozess (Backend: Downloads, Auth, Spielstart)
@@ -31,7 +39,10 @@ npm run package      # Windows-Installer/Portable (release/)
 
 ## Status
 
-Siehe Meilensteine M1–M8. Aktuell: **M1 — Scaffold & Fenster**.
+Alle Meilensteine **M1–M8 sind umgesetzt**: Scaffold, Design-System, Auth,
+Versionen & Instanzen, Spielstart, Mod-Loader (Fabric/Forge/Quilt), Mods &
+Modpacks (Modrinth) sowie Einstellungen, Instanz-Verwaltung und Windows-Build-
+Konfiguration. Offene Restpunkte (App-Icon, reales Packaging) siehe `HANDOFF.md`.
 
 ## Hinweis zum Login
 

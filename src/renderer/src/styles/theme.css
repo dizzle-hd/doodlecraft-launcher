@@ -1,37 +1,169 @@
-/* Drawing-Style Theme — zentrale Design-Tokens.
-   Lokal gebündelte Handschrift-Fonts (kein CDN -> CSP-konform). */
+/*
+ * Design-System. Zwei Achsen:
+ *   data-style = doodle | minimal   (Stil)
+ *   data-theme = dark | light       (Modus)
+ * Farben/Abstände ausschließlich über diese CSS-Variablen.
+ */
+
+/* Handschrift-Fonts (lokal gebündelt, CSP-konform) für den Doodle-Stil. */
 @import '@fontsource/patrick-hand/400.css';
 @import '@fontsource/architects-daughter/400.css';
 
 :root {
-  /* Papier & Tinte */
-  --paper: #f4efe1;
-  --paper-2: #fffdf6;
-  --paper-edge: #e7dec8;
-  --ink: #2b2724;
-  --ink-soft: #5b554e;
-  --ink-faint: #9b9388;
-
-  /* Akzente (Minecraft-Gras-Grün + Terrakotta) */
-  --accent: #4f8f3f;
-  --accent-deep: #356029;
-  --accent-2: #c1440e;
-  --danger: #b3322a;
-
-  /* Schrift */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-hand: 'Patrick Hand', 'Comic Sans MS', cursive;
   --font-display: 'Architects Daughter', 'Patrick Hand', cursive;
 
-  /* Form */
+  /* Aktive UI-Schrift – im Doodle-Stil überschrieben. */
+  --font-ui: var(--font-sans);
+  --font-head: var(--font-sans);
+
+  --radius-sm: 6px;
   --radius: 10px;
-  --shadow-doodle: 3px 3px 0 rgba(43, 39, 36, 0.18);
-  --shadow-doodle-lg: 5px 6px 0 rgba(43, 39, 36, 0.22);
+  --radius-lg: 16px;
+
+  --titlebar-h: 38px;
+  --sidebar-w: 232px;
+
+  /* Akzent (Standard: Modrinth-Grün) – per data-accent umschaltbar */
+  --accent: #1bd96a;
+  --accent-hover: #15c25e;
+  --accent-press: #12a851;
+  --on-accent: #06130b;
+
+  --danger: #f0584c;
+  --danger-bg: rgba(240, 88, 76, 0.14);
+  --warn: #e3b341;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-/* Subtiler Papier-Hintergrund: warme Farbe + sehr leichte Linien-Textur. */
-.paper-bg {
-  background-color: var(--paper);
-  background-image:
-    radial-gradient(rgba(43, 39, 36, 0.035) 1px, transparent 1px);
-  background-size: 22px 22px;
+/* ---------------- Dark (Standard) ---------------- */
+:root,
+[data-theme='dark'] {
+  --bg: #14161a;
+  --bg-2: #181b20;
+  --surface: #1e2127;
+  --surface-2: #242830;
+  --surface-hover: #2a2f38;
+  --border: #2c313a;
+  --border-strong: #3a414d;
+
+  --text: #e8eaed;
+  --text-soft: #b4b9c2;
+  --text-muted: #868d99;
+  --overlay: rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+/* ---------------- Light ---------------- */
+[data-theme='light'] {
+  --bg: #f3f5f8;
+  --bg-2: #eaedf2;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --surface-hover: #eef1f5;
+  --border: #e1e5ea;
+  --border-strong: #cfd5dd;
+
+  --text: #1b1e24;
+  --text-soft: #444b55;
+  --text-muted: #6b7280;
+  --overlay: rgba(20, 22, 26, 0.4);
+
+  --shadow: 0 8px 24px rgba(20, 22, 26, 0.12);
+  --shadow-sm: 0 2px 8px rgba(20, 22, 26, 0.08);
+
+  color-scheme: light;
+}
+
+/* ---------------- Akzentfarben (data-accent) ---------------- */
+[data-accent='green'] {
+  --accent: #1bd96a;
+  --accent-hover: #15c25e;
+  --accent-press: #12a851;
+  --on-accent: #06130b;
+}
+[data-accent='blue'] {
+  --accent: #3b82f6;
+  --accent-hover: #2f6fe0;
+  --accent-press: #2861c9;
+  --on-accent: #ffffff;
+}
+[data-accent='purple'] {
+  --accent: #8b5cf6;
+  --accent-hover: #7c4ddb;
+  --accent-press: #6f43c7;
+  --on-accent: #ffffff;
+}
+[data-accent='pink'] {
+  --accent: #ec4899;
+  --accent-hover: #db3d8b;
+  --accent-press: #c5357c;
+  --on-accent: #ffffff;
+}
+[data-accent='orange'] {
+  --accent: #f59e0b;
+  --accent-hover: #e08e06;
+  --accent-press: #c87e04;
+  --on-accent: #1a1206;
+}
+[data-accent='red'] {
+  --accent: #ef4444;
+  --accent-hover: #e0383b;
+  --accent-press: #c93033;
+  --on-accent: #ffffff;
+}
+[data-accent='cyan'] {
+  --accent: #06b6d4;
+  --accent-hover: #06a3be;
+  --accent-press: #058da5;
+  --on-accent: #06121a;
+}
+
+/* ===================== Doodle-Stil (Drawing) ===================== */
+[data-style='doodle'] {
+  --font-ui: var(--font-hand);
+  --font-head: var(--font-display);
+}
+
+/* Doodle – Hell (Papier/weiß) */
+[data-style='doodle'][data-theme='light'] {
+  --bg: #f4efe2;
+  --bg-2: #ece5d3;
+  --surface: #fffdf5;
+  --surface-2: #f3ecda;
+  --surface-hover: #ece3cd;
+  --border: #2b2724;
+  --border-strong: #2b2724;
+
+  --text: #2b2724;
+  --text-soft: #574e44;
+  --text-muted: #847868;
+  --overlay: rgba(43, 39, 36, 0.4);
+  --shadow: 6px 7px 0 rgba(43, 39, 36, 0.9);
+  --shadow-sm: 3px 4px 0 rgba(43, 39, 36, 0.85);
+  color-scheme: light;
+}
+
+/* Doodle – Dunkel (schwarz) */
+[data-style='doodle'][data-theme='dark'] {
+  --bg: #181513;
+  --bg-2: #201c18;
+  --surface: #262019;
+  --surface-2: #2f2820;
+  --surface-hover: #383022;
+  --border: #ece2cf;
+  --border-strong: #ece2cf;
+
+  --text: #efe7d6;
+  --text-soft: #c8bca6;
+  --text-muted: #968a76;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow: 6px 7px 0 rgba(0, 0, 0, 0.65);
+  --shadow-sm: 3px 4px 0 rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }

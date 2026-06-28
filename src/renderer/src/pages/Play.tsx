@@ -95,9 +95,9 @@ export default function Play({
   return (
     <div className="play-screen">
       {account ? (
-        <SkinRender uuid={account.uuid} height={420} rotation={0.45} />
+        <SkinRender uuid={account.uuid} height={500} rotation={0.7} />
       ) : (
-        <div className="skin-render" style={{ height: 420 }}>
+        <div className="skin-render" style={{ height: 500 }}>
           <div className="skin-render__msg muted">Kein Account – Skin nicht verfügbar</div>
         </div>
       )}

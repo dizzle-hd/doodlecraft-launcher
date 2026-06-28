@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Icon from './icons'
 
 /**
  * Eigene Titelleiste für das rahmenlose Fenster. Der mittlere Bereich ist als
@@ -15,7 +16,9 @@ export default function TitleBar(): JSX.Element {
   return (
     <div className="titlebar">
       <div className="titlebar__brand">
-        <span className="titlebar__logo">◆</span>
+        <span className="titlebar__logo">
+          <Icon name="cube" size={16} />
+        </span>
         <span className="titlebar__name">DoodleCraft</span>
       </div>
       <div className="titlebar__drag" />

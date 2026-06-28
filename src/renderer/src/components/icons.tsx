@@ -94,6 +94,12 @@ const PATHS: Record<string, JSX.Element> = {
       <path d="M4 11a8 8 0 0114-5l2 2M20 13a8 8 0 01-14 5l-2-2" />
       <path d="M20 4v4h-4M4 20v-4h4" />
     </>
+  ),
+  switch: (
+    <>
+      <path d="M4 8h14m0 0l-4-4m4 4l-4 4" />
+      <path d="M20 16H6m0 0l4-4m-4 4l4 4" />
+    </>
   )
 }
 

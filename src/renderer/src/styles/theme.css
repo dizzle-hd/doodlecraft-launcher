@@ -144,8 +144,8 @@
   --text-soft: #574e44;
   --text-muted: #847868;
   --overlay: rgba(43, 39, 36, 0.4);
-  --shadow: 4px 5px 0 rgba(43, 39, 36, 0.18);
-  --shadow-sm: 2px 3px 0 rgba(43, 39, 36, 0.16);
+  --shadow: 6px 7px 0 rgba(43, 39, 36, 0.9);
+  --shadow-sm: 3px 4px 0 rgba(43, 39, 36, 0.85);
   color-scheme: light;
 }
 
@@ -163,7 +163,7 @@
   --text-soft: #c8bca6;
   --text-muted: #968a76;
   --overlay: rgba(0, 0, 0, 0.55);
-  --shadow: 4px 5px 0 rgba(0, 0, 0, 0.5);
-  --shadow-sm: 2px 3px 0 rgba(0, 0, 0, 0.45);
+  --shadow: 6px 7px 0 rgba(0, 0, 0, 0.65);
+  --shadow-sm: 3px 4px 0 rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }

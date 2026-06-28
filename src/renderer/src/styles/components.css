@@ -19,8 +19,14 @@
   letter-spacing: -0.01em;
 }
 .titlebar__logo {
-  color: var(--accent);
-  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #16181c;
+  color: #ffffff;
+  flex: 0 0 auto;
 }
 .titlebar__name {
   font-size: 0.9rem;
@@ -408,6 +414,8 @@
 .modal__body {
   padding: 18px;
   overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .modal__foot {
   display: flex;
@@ -1173,4 +1181,152 @@
 }
 .instance-card--clickable:active {
   transform: translateY(-1px);
+}
+
+/* ===================== Doodle intensiver ===================== */
+[data-style='doodle'] .card,
+[data-style='doodle'] .instance-card,
+[data-style='doodle'] .modal,
+[data-style='doodle'] .play-stage,
+[data-style='doodle'] .skin-stage--solo,
+[data-style='doodle'] .log-view,
+[data-style='doodle'] .empty,
+[data-style='doodle'] .btn,
+[data-style='doodle'] .field,
+[data-style='doodle'] .select select,
+[data-style='doodle'] .account-pill,
+[data-style='doodle'] .instance-card__icon,
+[data-style='doodle'] .mod-row__icon,
+[data-style='doodle'] .play-pill,
+[data-style='doodle'] .play-pill__play {
+  border-width: 3px;
+}
+/* leichte „handgezeichnete" Schräglagen */
+[data-style='doodle'] .page-head h1 {
+  display: inline-block;
+  transform: rotate(-1.4deg);
+}
+[data-style='doodle'] h3 {
+  display: inline-block;
+  transform: rotate(-0.7deg);
+}
+[data-style='doodle'] .nav-item.is-active {
+  transform: rotate(-1deg);
+}
+[data-style='doodle'] .chip:nth-child(odd) {
+  transform: rotate(-1.6deg);
+}
+[data-style='doodle'] .chip:nth-child(even) {
+  transform: rotate(1.3deg);
+}
+[data-style='doodle'] .titlebar__name {
+  font-family: var(--font-display);
+  transform: rotate(-1.2deg);
+}
+/* skizzenhafter Akzent-Unterstrich unter Seiten-Titeln */
+[data-style='doodle'] .page-head h1::after {
+  content: '';
+  display: block;
+  height: 4px;
+  width: 70%;
+  margin-top: 3px;
+  background: var(--accent);
+  border-radius: 60% 30% 70% 40% / 80% 50% 60% 40%;
+}
+/* aktiver Button drückt sich „in" den Schatten */
+[data-style='doodle'] .btn:not(:disabled):active,
+[data-style='doodle'] .play-pill__play:not(:disabled):active {
+  box-shadow: none;
+  transform: translate(3px, 4px);
+}
+
+/* ---------------- Play-Screen (großer Skin + Button drunter) ---------------- */
+.play-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+  padding-top: 4px;
+}
+.play-screen__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-head);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.switch-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, transform 0.25s;
+}
+.switch-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: rotate(180deg);
+}
+.play-big {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 15px 46px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  box-shadow: 0 6px 26px color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: background 0.12s, transform 0.08s, box-shadow 0.14s;
+}
+.play-big:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.play-big:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+.play-big:not(:disabled):active {
+  transform: translateY(2px);
+}
+.play-screen__progress {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Doodle: Play-Button & Switch gezeichnet */
+[data-style='doodle'] .play-big {
+  border: 3px solid var(--border-strong);
+  border-radius: 40px 14px 44px 14px / 14px 40px 14px 44px;
+  box-shadow: var(--shadow);
+}
+[data-style='doodle'] .play-big:not(:disabled):active {
+  box-shadow: none;
+  transform: translate(3px, 4px);
+}
+[data-style='doodle'] .switch-btn {
+  border-width: 2.5px;
+  border-color: var(--border-strong);
+  border-radius: 16px 7px 14px 8px / 8px 14px 7px 16px;
+}
+[data-style='doodle'] .play-screen__title {
+  color: var(--accent);
 }

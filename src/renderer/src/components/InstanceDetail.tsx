@@ -270,7 +270,10 @@ export default function InstanceDetail({
               <Spinner /> <span className="muted">Lädt …</span>
             </div>
           ) : (
-            <ul className="mod-list" style={{ marginTop: 10, maxHeight: 240 }}>
+            <ul
+              className="mod-list"
+              style={{ marginTop: 10, maxHeight: 240, overflowY: 'auto' }}
+            >
               {results.map((hit) => {
                 const already = installedIds.has(hit.projectId)
                 return (

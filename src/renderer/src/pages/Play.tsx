@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useInstances } from '../store/instances'
 import { useAccounts } from '../store/accounts'
-import { Chip, ProgressBar, Select } from '../components/ui'
+import { Chip, ProgressBar } from '../components/ui'
 import Icon from '../components/icons'
 import SkinRender from '../components/SkinRender'
 
@@ -33,7 +33,8 @@ export default function Play({
     if (!selectedId && instances.length > 0) setSelectedId(instances[0].id)
   }, [instances, selectedId])
 
-  const current = instances.find((i) => i.id === selectedId) ?? instances[0] ?? null
+  const idx = instances.findIndex((i) => i.id === selectedId)
+  const current = instances[idx] ?? instances[0] ?? null
   const account = accounts.find((a) => a.id === activeId) ?? null
 
   const prog = current ? progress[current.id] : undefined
@@ -41,6 +42,12 @@ export default function Play({
   const launch_ = current ? launchStatus[current.id] : undefined
   const running = launch_?.state === 'launching' || launch_?.state === 'running'
   const busy = installing || running
+
+  const cycle = (): void => {
+    if (instances.length < 2) return
+    const next = instances[(Math.max(0, idx) + 1) % instances.length]
+    setSelectedId(next.id)
+  }
 
   const handlePlay = async (): Promise<void> => {
     if (!current) return
@@ -86,69 +93,52 @@ export default function Play({
       : ''
 
   return (
-    <div className="stack play-page">
-      <div className="play-stage">
-        <div className="play-stage__meta">
-          <div className="play-stage__title">{current.name}</div>
-          <div className="row" style={{ gap: 6, justifyContent: 'center' }}>
-            <Chip>{current.mcVersion}</Chip>
-            {current.loader && (
-              <Chip>
-                {current.loader}
-                {current.loaderVersion ? ` ${current.loaderVersion}` : ''}
-              </Chip>
-            )}
-            <Chip tone={current.installed ? 'accent' : 'default'}>
-              {current.installed ? 'installiert' : 'nicht installiert'}
-            </Chip>
-          </div>
+    <div className="play-screen">
+      {account ? (
+        <SkinRender uuid={account.uuid} height={420} rotation={0.45} />
+      ) : (
+        <div className="skin-render" style={{ height: 420 }}>
+          <div className="skin-render__msg muted">Kein Account – Skin nicht verfügbar</div>
         </div>
+      )}
 
-        {account ? (
-          <SkinRender uuid={account.uuid} height={400} rotation={0.45} />
-        ) : (
-          <div className="skin-render" style={{ height: 400 }}>
-            <div className="skin-render__msg muted">Kein Account – Skin nicht verfügbar</div>
-          </div>
-        )}
-
-        <div className="play-pill">
-          <button className="play-pill__play" disabled={busy} onClick={handlePlay}>
-            {!installing && !running && account && (
-              <Icon name={current.installed ? 'play' : 'download'} size={20} />
-            )}
-            {label}
+      <div className="play-screen__title">
+        <span>{current.name}</span>
+        {instances.length > 1 && (
+          <button className="switch-btn" title="Instanz wechseln" onClick={cycle}>
+            <Icon name="switch" size={20} />
           </button>
-          {instances.length > 1 && (
-            <>
-              <span className="play-pill__div" />
-              <Select
-                className="play-pill__switch"
-                value={current.id}
-                onChange={setSelectedId}
-                options={instances.map((i) => ({ value: i.id, label: i.name }))}
-              />
-            </>
-          )}
-        </div>
+        )}
       </div>
 
+      <div className="row" style={{ gap: 6, justifyContent: 'center' }}>
+        <Chip>{current.mcVersion}</Chip>
+        {current.loader && (
+          <Chip>
+            {current.loader}
+            {current.loaderVersion ? ` ${current.loaderVersion}` : ''}
+          </Chip>
+        )}
+      </div>
+
+      <button className="play-big" disabled={busy} onClick={handlePlay}>
+        {!installing && !running && account && (
+          <Icon name={current.installed ? 'play' : 'download'} size={22} />
+        )}
+        {label}
+      </button>
+
       {installing && prog && (
-        <div className="stack play-progress" style={{ gap: 6 }}>
+        <div className="play-screen__progress">
           <ProgressBar value={prog.progress} />
-          <span className="muted" style={{ fontSize: '0.82rem', textAlign: 'center' }}>
+          <span className="muted" style={{ fontSize: '0.82rem' }}>
             {PHASE_LABEL[prog.phase] ?? prog.phase} · {Math.round(prog.progress * 100)}%
           </span>
         </div>
       )}
-
-      {statusLine && (
-        <p className="text-soft" style={{ textAlign: 'center', margin: 0 }}>
-          {statusLine}
-        </p>
-      )}
+      {statusLine && <p className="text-soft" style={{ margin: 0 }}>{statusLine}</p>}
       {(error || prog?.phase === 'error') && (
-        <p style={{ color: 'var(--danger)', textAlign: 'center', margin: 0 }}>
+        <p style={{ color: 'var(--danger)', margin: 0 }}>
           {error ?? prog?.error ?? 'Installation fehlgeschlagen.'}
         </p>
       )}

@@ -138,7 +138,7 @@ export default function InstanceDetail({
   const installedIds = new Set(installed.map((m) => m.projectId).filter(Boolean))
 
   return (
-    <Modal open onClose={onClose} title={instance.name} width={680}>
+    <Modal open onClose={onClose} title={instance.name} width={680} fullHeight>
       {/* Kopf: Icon + Name + Chips */}
       <div className="row" style={{ gap: 14, marginBottom: 14 }}>
         <button

@@ -384,23 +384,25 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: var(--overlay);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   /* Platz für die Titelleiste oben lassen, damit das Fenster nicht oben rausläuft. */
   padding: calc(var(--titlebar-h) + 16px) 16px 16px;
   z-index: 100;
-  backdrop-filter: blur(2px);
 }
 .modal {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
   max-height: 100%;
   display: flex;
   flex-direction: column;
+}
+.modal--full {
+  height: 100%;
 }
 .modal__head {
   display: flex;
@@ -1211,9 +1213,6 @@
 [data-style='doodle'] h3 {
   display: inline-block;
   transform: rotate(-0.7deg);
-}
-[data-style='doodle'] .nav-item.is-active {
-  transform: rotate(-1deg);
 }
 [data-style='doodle'] .chip:nth-child(odd) {
   transform: rotate(-1.6deg);

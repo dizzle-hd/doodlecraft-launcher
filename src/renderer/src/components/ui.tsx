@@ -218,6 +218,8 @@ export interface ModalProps {
   children?: ReactNode
   footer?: ReactNode
   width?: number
+  /** Nutzt die volle verfügbare Höhe (für inhaltsreiche Fenster). */
+  fullHeight?: boolean
 }
 
 export function Modal({
@@ -226,7 +228,8 @@ export function Modal({
   title,
   children,
   footer,
-  width = 540
+  width = 540,
+  fullHeight
 }: ModalProps): JSX.Element | null {
   useEffect(() => {
     if (!open) return
@@ -241,7 +244,7 @@ export function Modal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal"
+        className={`modal ${fullHeight ? 'modal--full' : ''}`}
         style={{ width: `min(${width}px, 92vw)` }}
         onClick={(e) => e.stopPropagation()}
       >

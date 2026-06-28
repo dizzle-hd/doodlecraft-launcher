@@ -52,10 +52,17 @@ export default function SkinRender({
           fov: 38
         })
         await v.loadSkin(data.dataUrl, { model: data.slim ? 'slim' : 'default' })
-        v.playerObject.rotation.y = rotation
         v.controls.enableZoom = false
         v.controls.enablePan = false
-        if (idle) v.animation = new sv.IdleAnimation()
+        // WICHTIG: Animation zuerst setzen – ihr Setter resettet die Pose/Rotation.
+        // Walking-Animation: ein Bein vorn, eins hinten (laufende Pose).
+        if (idle) {
+          const walk = new sv.WalkingAnimation()
+          walk.headBobbing = false
+          v.animation = walk
+        }
+        // Danach die feste Grunddrehung (nach rechts) anwenden.
+        v.playerObject.rotation.y = rotation
         if (cancelled) {
           v.dispose()
           return

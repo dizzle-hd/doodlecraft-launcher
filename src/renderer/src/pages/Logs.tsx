@@ -69,7 +69,11 @@ export default function Logs(): JSX.Element {
     setLines([])
   }
 
-  const status = instanceId ? launchStatus[instanceId]?.state : undefined
+  const current = instanceId ? launchStatus[instanceId] : undefined
+  const status = current?.state
+  const statusError =
+    current?.error ??
+    (current?.state === 'error' ? 'Start fehlgeschlagen (kein Detail).' : undefined)
 
   if (instances.length === 0) {
     return (
@@ -104,6 +108,21 @@ export default function Logs(): JSX.Element {
             Leeren
           </Button>
         </div>
+        {statusError && (
+          <p
+            style={{
+              margin: '0 0 12px',
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--danger-bg)',
+              color: 'var(--danger)',
+              fontSize: '0.88rem',
+              whiteSpace: 'pre-wrap'
+            }}
+          >
+            {statusError}
+          </p>
+        )}
         <pre ref={preRef} className="log-view">
           {lines.length === 0
             ? 'Noch keine Ausgabe. Starte die Instanz über „Spielen".'

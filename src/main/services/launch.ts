@@ -8,7 +8,7 @@ import { emit } from '../ipc/registry'
 import { getSettings } from '../store'
 import { getActiveAccount, getLaunchAuth } from './auth'
 import { instanceDir, patchInstance, readInstanceOrThrow } from './instances'
-import { resolveJavaBinary } from './install'
+import { resolveJavaBinary, ensureJavaExecutable } from './install'
 import type { Instance, LaunchStatus } from '@shared/ipc'
 
 /** Laufende Prozesse je Instanz-ID, um Doppelstarts zu verhindern. */
@@ -91,6 +91,8 @@ function resolveJava(instance: Instance): string {
       'Keine passende Java-Runtime gefunden. Bitte die Instanz (neu) installieren.'
     )
   }
+  // Sicherheitsnetz: repariert bestehende Installs ohne Execute-Bit.
+  ensureJavaExecutable(auto)
   return auto
 }
 

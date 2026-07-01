@@ -1,5 +1,5 @@
-import { join } from 'path'
-import { existsSync, readdirSync } from 'fs'
+import { dirname, join } from 'path'
+import { chmodSync, existsSync, readdirSync } from 'fs'
 import type { WebContents } from 'electron'
 import {
   installTask,
@@ -81,6 +81,36 @@ export function resolveJavaBinary(component: string | undefined): string | null 
   return javaBinaryIn(join(paths.java, component))
 }
 
+/**
+ * Stellt sicher, dass die Java-Binaries ausführbar sind (Linux/macOS).
+ * `@xmcl/installer` setzt das Execute-Bit der heruntergeladenen Mojang-Runtime
+ * nicht zuverlässig -> sonst scheitert der Start mit EACCES. Best-effort: das
+ * ganze `bin/`-Verzeichnis sowie `lib/jspawnhelper` ausführbar machen.
+ */
+export function ensureJavaExecutable(javaBinary: string): void {
+  if (process.platform === 'win32') return
+  const binDir = dirname(javaBinary)
+  try {
+    for (const f of readdirSync(binDir)) {
+      try {
+        chmodSync(join(binDir, f), 0o755)
+      } catch {
+        /* einzelne Datei ignorieren */
+      }
+    }
+  } catch {
+    /* Verzeichnis nicht lesbar -> ignorieren */
+  }
+  const jspawn = join(binDir, '..', 'lib', 'jspawnhelper')
+  if (existsSync(jspawn)) {
+    try {
+      chmodSync(jspawn, 0o755)
+    } catch {
+      /* ignorieren */
+    }
+  }
+}
+
 function runtimeInstalled(runtimeDir: string): boolean {
   try {
     return existsSync(runtimeDir) && readdirSync(runtimeDir).length > 0
@@ -112,12 +142,13 @@ async function provisionJava(
       lzma: false
     })
     await runTracked(sender, instanceId, 'java', javaTask)
+    // Heruntergeladene Binaries ausführbar machen (Linux/macOS).
+    const jbin = javaBinaryIn(runtimeDir)
+    if (jbin) ensureJavaExecutable(jbin)
   } else {
     send(sender, { instanceId, phase: 'java', progress: 1, label: component })
   }
 
-  // Komponente merken; konkreter Binary-Pfad wird in M5 aufgelöst.
-  javaBinaryIn(runtimeDir)
   return component
 }
 

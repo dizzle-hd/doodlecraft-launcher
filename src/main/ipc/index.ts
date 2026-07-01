@@ -4,6 +4,7 @@ import { registerAuthHandlers } from './auth'
 import { registerInstanceHandlers } from './instances'
 import { registerModHandlers } from './mods'
 import { registerWindowHandlers } from './window'
+import { installUpdate } from '../updater'
 
 /**
  * Registriert alle IPC-Handler. Pro Meilenstein kommen hier weitere
@@ -17,6 +18,8 @@ export function registerIpcHandlers(): void {
   }))
 
   handle('app:ping', (_ctx, message) => `pong: ${message}`)
+
+  handle('update:install', () => installUpdate())
 
   registerAuthHandlers()
   registerInstanceHandlers()

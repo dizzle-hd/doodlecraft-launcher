@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import { createMainWindow } from './window'
 import { registerIpcHandlers } from './ipc'
+import { initAutoUpdates } from './updater'
 
 // Single-Instance: zweite Instanz fokussiert nur das vorhandene Fenster.
 const gotLock = app.requestSingleInstanceLock()
@@ -11,6 +12,7 @@ if (!gotLock) {
 app.whenReady().then(() => {
   registerIpcHandlers()
   const mainWindow = createMainWindow()
+  initAutoUpdates(mainWindow)
 
   app.on('second-instance', () => {
     if (mainWindow.isMinimized()) mainWindow.restore()

@@ -1,5 +1,8 @@
 import { BrowserWindow, shell } from 'electron'
 import { join } from 'path'
+// Wird von electron-vite ins Build kopiert; liefert den Laufzeit-Pfad zum Icon.
+// Setzt unter Linux das Fenster-Icon (_NET_WM_ICON) -> Taskleiste/Dock.
+import appIcon from '../../resources/icon.png?asset'
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
@@ -14,6 +17,7 @@ export function createMainWindow(): BrowserWindow {
     backgroundColor: '#16181c',
     autoHideMenuBar: true,
     title: 'DoodleCraft Launcher',
+    icon: appIcon,
     // Rahmenloses Fenster mit eigener Titelleiste (siehe TitleBar.tsx).
     frame: false,
     webPreferences: {

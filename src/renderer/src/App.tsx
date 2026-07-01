@@ -9,6 +9,7 @@ import Skins from './pages/Skins'
 import Appearance from './pages/Appearance'
 import Settings from './pages/Settings'
 import SkinHead from './components/SkinHead'
+import UpdateBanner from './components/UpdateBanner'
 import { useAccounts } from './store/accounts'
 import { useInstances } from './store/instances'
 
@@ -49,6 +50,7 @@ export default function App(): JSX.Element {
   }, [setProgress, setLaunchStatus])
 
   return (
+    <>
     <AppShell
       items={NAV}
       active={active}
@@ -76,5 +78,7 @@ export default function App(): JSX.Element {
         {active === 'settings' && <Settings />}
       </div>
     </AppShell>
+    <UpdateBanner />
+    </>
   )
 }

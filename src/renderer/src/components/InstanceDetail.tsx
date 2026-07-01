@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import type { InstalledMod, ModSearchHit } from '@shared/ipc'
+import { useState } from 'react'
+import type { ContentKind } from '@shared/ipc'
 import { useInstances } from '../store/instances'
-import { Modal, Button, Chip, IconButton, Input, ProgressBar, Spinner } from './ui'
+import { Button, Chip, IconButton, Input, ProgressBar } from './ui'
 import Icon from './icons'
 import { InstanceIcon, IconPicker } from './InstanceIcon'
+import ContentPanel, { type ContentApi } from './ContentPanel'
 
 const PHASE_LABEL: Record<string, string> = {
   minecraft: 'Minecraft',
@@ -13,12 +14,61 @@ const PHASE_LABEL: Record<string, string> = {
   error: 'Fehler'
 }
 
+/** Inhaltstypen-Leiste (rechts). „soon“ = noch nicht verfügbar. */
+const CONTENT_TYPES: { id: string; label: string; icon: string; soon?: boolean }[] = [
+  { id: 'mods', label: 'Mods', icon: 'package' },
+  { id: 'resourcepack', label: 'Ressourcenpakete', icon: 'design' },
+  { id: 'shaderpack', label: 'Shader', icon: 'cube' },
+  { id: 'datapack', label: 'Datapacks', icon: 'logs' },
+  { id: 'worlds', label: 'Welten', icon: 'instances', soon: true }
+]
+
+/** Labels für die generischen (loader-freien) Inhalts-Panels. */
+const PANEL_CONFIG: Record<
+  ContentKind,
+  { nounPlural: string; addLabel: string; searchPlaceholder: string }
+> = {
+  resourcepack: {
+    nounPlural: 'Ressourcenpakete',
+    addLabel: 'Ressourcenpaket hinzufügen',
+    searchPlaceholder: 'Ressourcenpakete suchen (Modrinth) …'
+  },
+  shaderpack: {
+    nounPlural: 'Shader',
+    addLabel: 'Shader hinzufügen',
+    searchPlaceholder: 'Shader suchen (Modrinth) …'
+  },
+  datapack: {
+    nounPlural: 'Datapacks',
+    addLabel: 'Datapack hinzufügen',
+    searchPlaceholder: 'Datapacks suchen (Modrinth) …'
+  }
+}
+
+/** „zuletzt gespielt“ kurz und auf Deutsch. */
+function formatLastPlayed(ts?: number): string {
+  if (!ts) return 'nie gespielt'
+  const diff = Date.now() - ts
+  const day = 86_400_000
+  if (diff < 60_000) return 'gerade eben'
+  if (diff < 3_600_000) return `vor ${Math.floor(diff / 60_000)} Min.`
+  if (diff < day) return `vor ${Math.floor(diff / 3_600_000)} Std.`
+  if (diff < 7 * day) return `vor ${Math.floor(diff / day)} Tg.`
+  return new Date(ts).toLocaleDateString('de-DE')
+}
+
 export interface InstanceDetailProps {
   instanceId: string
   onClose: () => void
   onPlay: (id: string) => void
 }
 
+/**
+ * Vollseiten-Detailansicht einer Instanz (Layout angelehnt an die
+ * ProfileDetailView des noriskclient-Launchers): Kopf mit Icon, Name, Meta und
+ * Aktionen, darunter der Inhaltsbereich mit rechter Inhaltstyp-Leiste. Mods und
+ * Ressourcenpakete teilen sich das `ContentPanel`.
+ */
 export default function InstanceDetail({
   instanceId,
   onClose,
@@ -41,44 +91,7 @@ export default function InstanceDetail({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(instance?.name ?? '')
   const [picking, setPicking] = useState(false)
-
-  // --- Mods ---
-  const [installed, setInstalled] = useState<InstalledMod[]>([])
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<ModSearchHit[]>([])
-  const [searching, setSearching] = useState(false)
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [updating, setUpdating] = useState<string | null>(null)
-  const [checking, setChecking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const reqId = useRef(0)
-
-  const loadInstalled = (): void => {
-    window.api
-      .invoke('mods:list', instanceId)
-      .then(setInstalled)
-      .catch(() => setInstalled([]))
-  }
-
-  useEffect(() => {
-    loadInstalled()
-    runSearch('')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [instanceId])
-
-  const runSearch = async (q: string): Promise<void> => {
-    const id = ++reqId.current
-    setSearching(true)
-    setError(null)
-    try {
-      const hits = await window.api.invoke('mods:search', instanceId, q)
-      if (id === reqId.current) setResults(hits)
-    } catch (e) {
-      if (id === reqId.current) setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      if (id === reqId.current) setSearching(false)
-    }
-  }
+  const [activeType, setActiveType] = useState('mods')
 
   if (!instance) return null
 
@@ -95,264 +108,189 @@ export default function InstanceDetail({
     setEditing(false)
   }
 
-  const installMod = async (hit: ModSearchHit): Promise<void> => {
-    setBusyId(hit.projectId)
-    setError(null)
-    try {
-      setInstalled(await window.api.invoke('mods:install', instanceId, hit.projectId))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setBusyId(null)
-    }
+  const modsApi: ContentApi = {
+    search: (q, offset) => window.api.invoke('mods:search', instanceId, q, offset),
+    list: () => window.api.invoke('mods:list', instanceId),
+    install: (pid) => window.api.invoke('mods:install', instanceId, pid),
+    remove: (fn) => window.api.invoke('mods:remove', instanceId, fn),
+    toggle: (fn, en) => window.api.invoke('mods:setEnabled', instanceId, fn, en),
+    checkUpdates: () => window.api.invoke('mods:checkUpdates', instanceId),
+    update: (fn) => window.api.invoke('mods:update', instanceId, fn)
   }
-  const toggle = async (mod: InstalledMod): Promise<void> => {
-    setInstalled(
-      await window.api.invoke('mods:setEnabled', instanceId, mod.fileName, !mod.enabled)
-    )
-  }
-  const removeMod = async (mod: InstalledMod): Promise<void> => {
-    setInstalled(await window.api.invoke('mods:remove', instanceId, mod.fileName))
-  }
-  const checkUpdates = async (): Promise<void> => {
-    setChecking(true)
-    try {
-      setInstalled(await window.api.invoke('mods:checkUpdates', instanceId))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setChecking(false)
-    }
-  }
-  const doUpdate = async (mod: InstalledMod): Promise<void> => {
-    setUpdating(mod.fileName)
-    try {
-      setInstalled(await window.api.invoke('mods:update', instanceId, mod.fileName))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setUpdating(null)
-    }
-  }
+  const contentApi = (kind: ContentKind): ContentApi => ({
+    search: (q, offset) => window.api.invoke('content:search', instanceId, kind, q, offset),
+    list: () => window.api.invoke('content:list', instanceId, kind),
+    install: (pid) => window.api.invoke('content:install', instanceId, kind, pid),
+    remove: (fn) => window.api.invoke('content:remove', instanceId, kind, fn),
+    checkUpdates: () => window.api.invoke('content:checkUpdates', instanceId, kind),
+    update: (fn) => window.api.invoke('content:update', instanceId, kind, fn)
+  })
 
-  const installedIds = new Set(installed.map((m) => m.projectId).filter(Boolean))
+  const playLabel = installing
+    ? 'Installiere …'
+    : running
+      ? 'Läuft …'
+      : instance.installed
+        ? 'Spielen'
+        : 'Installieren & Spielen'
 
   return (
-    <Modal open onClose={onClose} title={instance.name} width={680} fullHeight>
-      {/* Kopf: Icon + Name + Chips */}
-      <div className="row" style={{ gap: 14, marginBottom: 14 }}>
-        <button
-          className="instance-card__icon instance-card__icon--btn"
-          title="Icon ändern"
-          onClick={() => setPicking(true)}
-        >
-          <InstanceIcon icon={instance.icon} size={30} />
-        </button>
-        {picking && (
-          <IconPicker
-            current={instance.icon}
-            onPick={(icon) => {
-              setIcon(instance.id, icon)
-              setPicking(false)
-            }}
-            onClose={() => setPicking(false)}
-          />
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {editing ? (
-            <div className="row">
-              <Input value={draft} onChange={setDraft} onEnter={commitRename} />
-              <Button small variant="primary" onClick={commitRename}>
-                OK
-              </Button>
-            </div>
-          ) : (
-            <div className="row" style={{ gap: 8 }}>
-              <strong style={{ fontSize: '1.1rem' }}>{instance.name}</strong>
-              <IconButton title="Umbenennen" onClick={() => setEditing(true)}>
-                <Icon name="edit" size={16} />
-              </IconButton>
-            </div>
-          )}
-          <div className="row" style={{ gap: 6, marginTop: 4 }}>
-            <Chip>{instance.mcVersion}</Chip>
-            {instance.loader && (
-              <Chip>
-                {instance.loader}
-                {instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}
-              </Chip>
-            )}
-            <Chip tone={instance.installed ? 'accent' : 'default'}>
-              {instance.installed ? 'installiert' : 'nicht installiert'}
-            </Chip>
-          </div>
-        </div>
-      </div>
-
-      {/* Aktionen */}
-      <div className="row" style={{ marginBottom: 8 }}>
-        <Button variant="primary" disabled={busy} onClick={() => onPlay(instance.id)}>
-          <Icon name={instance.installed ? 'play' : 'download'} size={16} />
-          {installing
-            ? 'Installiere …'
-            : running
-              ? 'Läuft …'
-              : instance.installed
-                ? 'Spielen'
-                : 'Installieren & Spielen'}
-        </Button>
-        <Button small disabled={busy} onClick={() => install(instance.id)}>
-          {instance.installed ? 'Reparieren' : 'Installieren'}
-        </Button>
-        <div className="spacer" />
-        <IconButton title="Ordner öffnen" onClick={() => openFolder(instance.id)}>
-          <Icon name="folder" size={17} />
-        </IconButton>
-        <IconButton title="Duplizieren" onClick={() => duplicate(instance.id)}>
-          <Icon name="copy" size={17} />
-        </IconButton>
-        <IconButton
-          title="Löschen"
-          danger
-          onClick={() => {
-            remove(instance.id)
-            onClose()
+    <div className="detail">
+      {picking && (
+        <IconPicker
+          current={instance.icon}
+          onPick={(icon) => {
+            setIcon(instance.id, icon)
+            setPicking(false)
           }}
-        >
-          <Icon name="trash" size={17} />
-        </IconButton>
+          onClose={() => setPicking(false)}
+        />
+      )}
+
+      {/* Kopfzeile */}
+      <div className="detail__head">
+        <button className="detail__back" onClick={onClose} title="Zurück">
+          ‹ Zurück
+        </button>
+
+        <div className="detail__title-row">
+          <button
+            className="instance-card__icon instance-card__icon--btn detail__icon"
+            title="Icon ändern"
+            onClick={() => setPicking(true)}
+          >
+            <InstanceIcon icon={instance.icon} size={40} />
+          </button>
+
+          <div className="detail__headinfo">
+            {editing ? (
+              <div className="row">
+                <Input value={draft} onChange={setDraft} onEnter={commitRename} />
+                <Button small variant="primary" onClick={commitRename}>
+                  OK
+                </Button>
+              </div>
+            ) : (
+              <div className="row" style={{ gap: 8 }}>
+                <h1 className="detail__name">{instance.name}</h1>
+                <IconButton title="Umbenennen" onClick={() => setEditing(true)}>
+                  <Icon name="edit" size={16} />
+                </IconButton>
+              </div>
+            )}
+            <div className="detail__meta">
+              <span>{instance.mcVersion}</span>
+              <span className="instance-row__sep" />
+              <span>
+                {instance.loader
+                  ? `${instance.loader}${instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}`
+                  : 'Vanilla'}
+              </span>
+              <span className="instance-row__sep" />
+              <span>{formatLastPlayed(instance.lastPlayed)}</span>
+              <Chip tone={instance.installed ? 'accent' : 'default'}>
+                {instance.installed ? 'installiert' : 'nicht installiert'}
+              </Chip>
+            </div>
+          </div>
+
+          <div className="detail__actions">
+            <Button variant="primary" disabled={busy} onClick={() => onPlay(instance.id)}>
+              <Icon name={instance.installed ? 'play' : 'download'} size={16} />
+              {playLabel}
+            </Button>
+            <Button small disabled={busy} onClick={() => install(instance.id)}>
+              {instance.installed ? 'Reparieren' : 'Installieren'}
+            </Button>
+            <IconButton title="Ordner öffnen" onClick={() => openFolder(instance.id)}>
+              <Icon name="folder" size={17} />
+            </IconButton>
+            <IconButton title="Duplizieren" onClick={() => duplicate(instance.id)}>
+              <Icon name="copy" size={17} />
+            </IconButton>
+            <IconButton
+              title="Löschen"
+              danger
+              onClick={() => {
+                remove(instance.id)
+                onClose()
+              }}
+            >
+              <Icon name="trash" size={17} />
+            </IconButton>
+          </div>
+        </div>
+
+        {prog && prog.phase !== 'done' && (
+          <div className="detail__progress">
+            <ProgressBar
+              value={prog.phase === 'error' ? 1 : prog.progress}
+              tone={prog.phase === 'error' ? 'danger' : 'accent'}
+            />
+            <span
+              className="muted"
+              style={{
+                fontSize: '0.78rem',
+                color: prog.phase === 'error' ? 'var(--danger)' : undefined
+              }}
+            >
+              {prog.phase === 'error'
+                ? `Fehler: ${prog.error ?? 'unbekannt'}`
+                : `${PHASE_LABEL[prog.phase] ?? prog.phase} · ${Math.round(prog.progress * 100)}%`}
+            </span>
+          </div>
+        )}
       </div>
 
-      {prog && prog.phase !== 'done' && (
-        <div className="stack" style={{ gap: 5, marginBottom: 8 }}>
-          <ProgressBar
-            value={prog.phase === 'error' ? 1 : prog.progress}
-            tone={prog.phase === 'error' ? 'danger' : 'accent'}
-          />
-          <span
-            className="muted"
-            style={{
-              fontSize: '0.78rem',
-              color: prog.phase === 'error' ? 'var(--danger)' : undefined
-            }}
-          >
-            {prog.phase === 'error'
-              ? `Fehler: ${prog.error ?? 'unbekannt'}`
-              : `${PHASE_LABEL[prog.phase] ?? prog.phase} · ${Math.round(prog.progress * 100)}%`}
-          </span>
-        </div>
-      )}
+      <div className="detail__divider" />
 
-      {/* Mods */}
-      <h3 style={{ marginTop: 14 }}>Mods</h3>
-      {!instance.loader ? (
-        <p className="muted">
-          Diese Instanz ist Vanilla – Mods brauchen einen Loader (Fabric/Forge/Quilt).
-        </p>
-      ) : (
-        <>
-          <div className="row">
-            <Input
-              value={query}
-              onChange={setQuery}
-              onEnter={() => runSearch(query.trim())}
-              placeholder="Mods suchen (Modrinth) …"
-              full
+      {/* Inhalt + Inhaltstyp-Leiste */}
+      <div className="detail__body">
+        <div className="detail__content">
+          {activeType === 'mods' ? (
+            !instance.loader ? (
+              <p className="muted">
+                Diese Instanz ist Vanilla – Mods brauchen einen Loader (Fabric/Forge/Quilt).
+                Ressourcenpakete, Shader und Datapacks funktionieren trotzdem.
+              </p>
+            ) : (
+              <ContentPanel
+                key={`${instanceId}:mods`}
+                api={modsApi}
+                nounPlural="Mods"
+                addLabel="Mods hinzufügen"
+                searchPlaceholder="Mods suchen (Modrinth) …"
+              />
+            )
+          ) : PANEL_CONFIG[activeType as ContentKind] ? (
+            <ContentPanel
+              key={`${instanceId}:${activeType}`}
+              api={contentApi(activeType as ContentKind)}
+              {...PANEL_CONFIG[activeType as ContentKind]}
             />
-            <Button onClick={() => runSearch(query.trim())} disabled={searching}>
-              Suchen
-            </Button>
-          </div>
-          {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
-
-          {searching ? (
-            <div className="row" style={{ marginTop: 10 }}>
-              <Spinner /> <span className="muted">Lädt …</span>
-            </div>
           ) : (
-            <ul
-              className="mod-list"
-              style={{ marginTop: 10, maxHeight: 240, overflowY: 'auto' }}
+            <div className="empty">Dieser Bereich folgt in einer späteren Version.</div>
+          )}
+        </div>
+
+        <aside className="detail__cside">
+          <div className="detail__cside-title">Inhalte</div>
+          {CONTENT_TYPES.map((c) => (
+            <button
+              key={c.id}
+              className={`content-nav ${activeType === c.id ? 'is-active' : ''} ${
+                c.soon ? 'is-soon' : ''
+              }`}
+              disabled={c.soon}
+              onClick={() => !c.soon && setActiveType(c.id)}
             >
-              {results.map((hit) => {
-                const already = installedIds.has(hit.projectId)
-                return (
-                  <li key={hit.projectId} className="mod-row">
-                    {hit.iconUrl ? (
-                      <img className="mod-row__icon" src={hit.iconUrl} alt="" />
-                    ) : (
-                      <div className="mod-row__icon mod-row__icon--placeholder">
-                        <Icon name="package" size={20} />
-                      </div>
-                    )}
-                    <div className="mod-row__info">
-                      <span className="mod-row__name">{hit.title}</span>
-                      <span className="mod-row__desc">{hit.description}</span>
-                    </div>
-                    <Button
-                      small
-                      variant={already ? 'ghost' : 'secondary'}
-                      onClick={() => installMod(hit)}
-                      disabled={busyId === hit.projectId || already}
-                    >
-                      {busyId === hit.projectId
-                        ? 'läuft …'
-                        : already
-                          ? 'installiert ✓'
-                          : 'Installieren'}
-                    </Button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-
-          <div className="row" style={{ justifyContent: 'space-between', marginTop: 14 }}>
-            <strong>Installiert ({installed.length})</strong>
-            {installed.length > 0 && (
-              <Button small variant="ghost" onClick={checkUpdates} disabled={checking}>
-                {checking ? 'Prüfe …' : 'Nach Updates suchen'}
-              </Button>
-            )}
-          </div>
-          {installed.length === 0 ? (
-            <p className="muted">Noch keine Mods installiert.</p>
-          ) : (
-            <ul className="mod-list" style={{ marginTop: 8 }}>
-              {installed.map((mod) => (
-                <li
-                  key={mod.fileName}
-                  className={`mod-row ${mod.enabled ? '' : 'is-disabled'}`}
-                >
-                  <div className="mod-row__info">
-                    <span className="mod-row__name">{mod.name ?? mod.fileName}</span>
-                    {mod.updateVersion && (
-                      <span className="mod-update">↑ Update: {mod.updateVersion}</span>
-                    )}
-                  </div>
-                  {mod.updateVersion && (
-                    <Button
-                      small
-                      variant="primary"
-                      onClick={() => doUpdate(mod)}
-                      disabled={updating === mod.fileName}
-                    >
-                      {updating === mod.fileName ? 'läuft …' : 'Aktualisieren'}
-                    </Button>
-                  )}
-                  {!mod.enabled && <Chip>aus</Chip>}
-                  <Button small variant="ghost" onClick={() => toggle(mod)}>
-                    {mod.enabled ? 'Aus' : 'An'}
-                  </Button>
-                  <Button small variant="danger" onClick={() => removeMod(mod)}>
-                    Entfernen
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-    </Modal>
+              <Icon name={c.icon} size={18} />
+              <span>{c.label}</span>
+              {c.soon && <span className="content-nav__soon">bald</span>}
+            </button>
+          ))}
+        </aside>
+      </div>
+    </div>
   )
 }

@@ -26,6 +26,8 @@ interface IndexEntry {
   version?: string
   /** Modrinth-Versions-ID – für zuverlässige Update-Erkennung. */
   versionId?: string
+  /** Projekt-Icon (Modrinth-CDN). */
+  iconUrl?: string
 }
 type ModIndex = Record<string, IndexEntry>
 
@@ -72,13 +74,14 @@ function recordIndex(instanceId: string, fileName: string, entry: IndexEntry): v
 
 export async function searchMods(
   instanceId: string,
-  query: string
+  query: string,
+  offset = 0
 ): Promise<ModSearchHit[]> {
   const instance = readInstanceOrThrow(instanceId)
   const facets: string[][] = [['project_type:mod'], [`versions:${instance.mcVersion}`]]
   // Loader-Facette nur, wenn die Instanz einen Loader nutzt.
   if (instance.loader) facets.push([`categories:${instance.loader}`])
-  return searchProjects(query, facets)
+  return searchProjects(query, facets, offset)
 }
 
 // --- Installation ------------------------------------------------------------
@@ -99,6 +102,16 @@ async function resolveVersion(
     throw new Error('Keine passende Mod-Version für diese Instanz gefunden.')
   }
   return versions[0]
+}
+
+/** Holt die Icon-URL eines Modrinth-Projekts (best effort). */
+async function fetchProjectIcon(projectId: string): Promise<string | undefined> {
+  try {
+    const project = await modrinthGet<{ icon_url?: string }>(`/project/${projectId}`)
+    return project.icon_url || undefined
+  } catch {
+    return undefined
+  }
 }
 
 async function installRecursive(
@@ -125,7 +138,8 @@ async function installRecursive(
     projectId,
     name: version.name,
     version: version.version_number,
-    versionId: version.id
+    versionId: version.id,
+    iconUrl: await fetchProjectIcon(projectId)
   })
 
   // Pflicht-Abhängigkeiten mitinstallieren.
@@ -161,10 +175,27 @@ export function listMods(instanceId: string): InstalledMod[] {
         size: statSync(join(dir, fileName)).size,
         name: meta.name,
         projectId: meta.projectId,
-        version: meta.version
+        version: meta.version,
+        iconUrl: meta.iconUrl
       }
     })
     .sort((a, b) => (a.name ?? a.fileName).localeCompare(b.name ?? b.fileName))
+}
+
+/** Wie listMods, füllt aber einmalig fehlende Projekt-Icons nach (best effort). */
+export async function listModsWithIcons(instanceId: string): Promise<InstalledMod[]> {
+  const index = readIndex(instanceId)
+  const missing = Object.entries(index).filter(([, m]) => m.projectId && !m.iconUrl)
+  if (missing.length > 0) {
+    await Promise.all(
+      missing.map(async ([key, m]) => {
+        const icon = await fetchProjectIcon(m.projectId!)
+        if (icon) index[key].iconUrl = icon
+      })
+    )
+    writeIndex(instanceId, index)
+  }
+  return listMods(instanceId)
 }
 
 export function removeMod(instanceId: string, fileName: string): InstalledMod[] {
@@ -259,7 +290,8 @@ export async function updateMod(
     projectId: meta.projectId,
     name: version.name,
     version: version.version_number,
-    versionId: version.id
+    versionId: version.id,
+    iconUrl: meta.iconUrl ?? (await fetchProjectIcon(meta.projectId))
   }
   writeIndex(instanceId, index)
   return listMods(instanceId)

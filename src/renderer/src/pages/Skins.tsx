@@ -29,7 +29,7 @@ export default function Skins(): JSX.Element {
         <div className="empty">Melde dich zuerst unter „Accounts“ an.</div>
       ) : (
         <div className="skin-stage skin-stage--solo">
-          <SkinRender uuid={account.uuid} reloadToken={reload} height={420} rotation={0.5} />
+          <SkinRender uuid={account.uuid} reloadToken={reload} height={420} />
           <div className="skin-stage__name">{account.name}</div>
         </div>
       )}

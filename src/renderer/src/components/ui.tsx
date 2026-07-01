@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   type ReactNode
 } from 'react'
+import { createPortal } from 'react-dom'
 
 /* Moderne, CSS-getriebene UI-Bausteine (ersetzt wired-elements). */
 
@@ -241,7 +242,11 @@ export function Modal({
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  // In einen Portal an <body> rendern, damit das `position: fixed`-Overlay
+  // sich am Fenster ausrichtet und nicht an einem transformierten Vorfahren
+  // (z. B. der Seiten-Animation) hängen bleibt – sonst wird der Dialog
+  // gestaucht/abgeschnitten.
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
         className={`modal ${fullHeight ? 'modal--full' : ''}`}
@@ -257,6 +262,7 @@ export function Modal({
         <div className="modal__body">{children}</div>
         {footer && <div className="modal__foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

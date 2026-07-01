@@ -7,7 +7,7 @@ import type {
   ModSearchHit
 } from '@shared/ipc'
 import { useInstances } from '../store/instances'
-import { Button, Chip, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
+import { Button, IconButton, Input, Modal, ProgressBar, Select, Spinner } from '../components/ui'
 import Icon from '../components/icons'
 import { InstanceIcon, IconPicker } from '../components/InstanceIcon'
 import InstanceDetail from '../components/InstanceDetail'
@@ -28,7 +28,8 @@ const LOADER_OPTS = [
 ]
 
 export default function Instances(): JSX.Element {
-  const { instances, loaded, progress, launchStatus, refresh, play } = useInstances()
+  const { instances, loaded, progress, launchStatus, refresh, play, remove, duplicate, openFolder } =
+    useInstances()
 
   const [creating, setCreating] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -36,6 +37,17 @@ export default function Instances(): JSX.Element {
   useEffect(() => {
     if (!loaded) refresh()
   }, [loaded, refresh])
+
+  // Detailansicht als Vollseite (ersetzt die Liste, à la noriskclient).
+  if (detailId) {
+    return (
+      <InstanceDetail
+        instanceId={detailId}
+        onClose={() => setDetailId(null)}
+        onPlay={(id) => play(id)}
+      />
+    )
+  }
 
   return (
     <div className="stack">
@@ -51,107 +63,130 @@ export default function Instances(): JSX.Element {
           Noch keine Instanzen. Erstelle mit „＋ Neue Instanz“ deine erste.
         </div>
       ) : (
-        <div className="card-grid">
+        <div className="instance-list">
           {instances.map((inst) => (
-            <InstanceCard
+            <InstanceRow
               key={inst.id}
               instance={inst}
               progress={progress[inst.id]}
               launchState={launchStatus[inst.id]?.state}
               onOpen={() => setDetailId(inst.id)}
               onPlay={() => play(inst.id)}
+              onFolder={() => openFolder(inst.id)}
+              onDuplicate={() => duplicate(inst.id)}
+              onDelete={() => remove(inst.id)}
             />
           ))}
         </div>
       )}
 
       {creating && <CreateInstanceModal onClose={() => setCreating(false)} />}
-      {detailId && (
-        <InstanceDetail
-          instanceId={detailId}
-          onClose={() => setDetailId(null)}
-          onPlay={(id) => play(id)}
-        />
-      )}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
 
-interface CardProps {
+interface RowProps {
   instance: Instance
   progress?: InstallProgress
   launchState?: 'launching' | 'running' | 'exited' | 'error'
   onOpen: () => void
   onPlay: () => void
+  onFolder: () => void
+  onDuplicate: () => void
+  onDelete: () => void
 }
 
-function InstanceCard({
+/** Formatiert „zuletzt gespielt“ kurz und auf Deutsch. */
+function formatLastPlayed(ts?: number): string {
+  if (!ts) return 'nie gespielt'
+  const diff = Date.now() - ts
+  const day = 86_400_000
+  if (diff < 60_000) return 'gerade eben'
+  if (diff < 3_600_000) return `vor ${Math.floor(diff / 60_000)} Min.`
+  if (diff < day) return `vor ${Math.floor(diff / 3_600_000)} Std.`
+  if (diff < 7 * day) return `vor ${Math.floor(diff / day)} Tg.`
+  return new Date(ts).toLocaleDateString('de-DE')
+}
+
+/**
+ * Horizontale Instanz-Zeile (Look angelehnt an noriskclient): Icon links,
+ * Name + Meta-Zeile, Aktionen rechts (beim Hover sichtbar). Klick auf die
+ * Zeile öffnet die Detailansicht.
+ */
+function InstanceRow({
   instance,
   progress,
   launchState,
   onOpen,
-  onPlay
-}: CardProps): JSX.Element {
+  onPlay,
+  onFolder,
+  onDuplicate,
+  onDelete
+}: RowProps): JSX.Element {
   const installing =
     progress !== undefined && progress.phase !== 'done' && progress.phase !== 'error'
   const running = launchState === 'launching' || launchState === 'running'
   const busy = installing || running
 
   return (
-    <div className="instance-card instance-card--clickable" onClick={onOpen}>
-      <div className="instance-card__top">
-        <div className="instance-card__icon">
-          <InstanceIcon icon={instance.icon} size={28} />
-        </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="instance-card__name">{instance.name}</div>
-          <div className="instance-card__meta">
-            <Chip>{instance.mcVersion}</Chip>
-            {instance.loader && <Chip>{instance.loader}</Chip>}
-            <Chip tone={running ? 'accent' : 'default'}>
-              {running ? 'läuft' : instance.installed ? 'installiert' : 'nicht installiert'}
-            </Chip>
-          </div>
-        </div>
+    <div className="instance-row" onClick={onOpen}>
+      <div className="instance-row__icon">
+        <InstanceIcon icon={instance.icon} size={30} />
       </div>
 
-      {progress && progress.phase !== 'done' && (
-        <div className="stack" style={{ gap: 5 }}>
-          <ProgressBar
-            value={progress.phase === 'error' ? 1 : progress.progress}
-            tone={progress.phase === 'error' ? 'danger' : 'accent'}
-          />
-          <span
-            className="muted"
-            style={{
-              fontSize: '0.78rem',
-              color: progress.phase === 'error' ? 'var(--danger)' : undefined
-            }}
-          >
-            {progress.phase === 'error'
-              ? `Fehler: ${progress.error ?? 'unbekannt'}`
-              : `${PHASE_LABEL[progress.phase] ?? progress.phase} · ${Math.round(
-                  progress.progress * 100
-                )}%`}
-          </span>
-        </div>
-      )}
+      <div className="instance-row__info">
+        <div className="instance-row__name">{instance.name}</div>
+        {installing && progress ? (
+          <div className="instance-row__progress">
+            <ProgressBar
+              value={progress.phase === 'error' ? 1 : progress.progress}
+              tone={progress.phase === 'error' ? 'danger' : 'accent'}
+            />
+            <span className="instance-row__phase">
+              {`${PHASE_LABEL[progress.phase] ?? progress.phase} · ${Math.round(
+                progress.progress * 100
+              )}%`}
+            </span>
+          </div>
+        ) : (
+          <div className="instance-row__meta">
+            <span>{instance.mcVersion}</span>
+            <span className="instance-row__sep" />
+            <span>
+              {instance.loader
+                ? `${instance.loader}${instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}`
+                : 'Vanilla'}
+            </span>
+            <span className="instance-row__sep" />
+            <span>{formatLastPlayed(instance.lastPlayed)}</span>
+          </div>
+        )}
+      </div>
 
-      <div
-        className="instance-card__actions"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Button variant="primary" small full disabled={busy} onClick={onPlay}>
+      <div className="instance-row__actions" onClick={(e) => e.stopPropagation()}>
+        <Button variant="primary" small disabled={busy} onClick={onPlay}>
+          <Icon name={instance.installed ? 'play' : 'download'} size={15} />
           {installing
             ? 'läuft …'
             : running
-              ? '▶ läuft …'
+              ? 'läuft …'
               : instance.installed
-                ? '▶ Spielen'
-                : '⤓ Installieren & Spielen'}
+                ? 'Spielen'
+                : 'Installieren'}
         </Button>
+        <div className="instance-row__icons">
+          <IconButton title="Ordner öffnen" onClick={onFolder}>
+            <Icon name="folder" size={16} />
+          </IconButton>
+          <IconButton title="Duplizieren" onClick={onDuplicate}>
+            <Icon name="copy" size={16} />
+          </IconButton>
+          <IconButton title="Löschen" danger onClick={onDelete}>
+            <Icon name="trash" size={16} />
+          </IconButton>
+        </div>
       </div>
     </div>
   )

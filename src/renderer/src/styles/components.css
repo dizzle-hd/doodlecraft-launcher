@@ -400,6 +400,9 @@
   max-height: 100%;
   display: flex;
   flex-direction: column;
+  /* Inhalt an den (im Doodle-Stil stark geschwungenen) Rand klippen,
+     damit die Scroll-Liste nicht unten rechts aus dem Popup herausläuft. */
+  overflow: hidden;
 }
 .modal--full {
   height: 100%;
@@ -512,26 +515,87 @@
 }
 
 /* ---------------- Instanz-Karten (Grid) ---------------- */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
-  gap: 16px;
-}
-.instance-card {
+/* Instanz-Übersicht: horizontale Listen-Zeilen (Look à la noriskclient). */
+.instance-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+.instance-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
 }
-.instance-card__top {
+.instance-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.instance-row__info {
+  flex: 1;
+  min-width: 0;
+}
+.instance-row__name {
+  font-weight: 650;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.instance-row__meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
-.instance-card__icon {
+.instance-row__sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.6;
+  flex: 0 0 auto;
+}
+.instance-row__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.instance-row__progress .progress {
+  flex: 1;
+}
+.instance-row__phase {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.instance-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.instance-row__icons {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.instance-row:hover .instance-row__icons {
+  opacity: 1;
+}
+
+/* Icon-Kachel (auch im Detail-/Erstellen-Dialog als Button genutzt). */
+.instance-card__icon,
+.instance-row__icon {
   width: 46px;
   height: 46px;
   border-radius: var(--radius-sm);
@@ -541,28 +605,25 @@
   font-size: 1.4rem;
   flex: 0 0 auto;
 }
-.instance-card__name {
-  font-weight: 650;
-  font-size: 1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.instance-card__meta {
+
+/* Update-Hinweis (unten rechts) */
+.update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 200;
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 3px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
 }
-.instance-card__actions {
-  display: flex;
-  gap: 8px;
-  margin-top: auto;
-}
-.instance-card__more {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.update-banner--ready {
+  border-color: var(--accent);
 }
 
 /* Empty-State */
@@ -572,6 +633,147 @@
   padding: 48px 16px;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
+}
+
+/* ---------------- Instanz-Detailansicht (Vollseite, à la noriskclient) -------- */
+.detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.detail__head {
+  flex: 0 0 auto;
+}
+.detail__back {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 14px;
+}
+.detail__back:hover {
+  color: var(--text);
+}
+.detail__title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.detail__icon {
+  width: 60px;
+  height: 60px;
+  font-size: 1.9rem;
+}
+.detail__headinfo {
+  flex: 1;
+  min-width: 0;
+}
+.detail__name {
+  margin: 0;
+  font-size: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail__meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 5px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+.detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.detail__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.detail__progress .progress {
+  flex: 1;
+}
+.detail__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 18px 0;
+  flex: 0 0 auto;
+}
+.detail__body {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+.detail__content {
+  flex: 1;
+  min-width: 0;
+}
+.detail__cside {
+  width: 216px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--border);
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail__cside-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.content-nav {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.content-nav:not(.is-soon):hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.content-nav.is-active {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.content-nav.is-soon {
+  opacity: 0.5;
+  cursor: default;
+}
+.content-nav__soon {
+  margin-left: auto;
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
 }
 
 /* ---------------- Mods / Modpacks ---------------- */
@@ -836,7 +1038,8 @@
 .mod-row:hover {
   border-color: var(--border-strong);
 }
-.instance-card__icon {
+.instance-card__icon,
+.instance-row__icon {
   color: var(--accent);
 }
 
@@ -887,6 +1090,13 @@
 }
 .skin-render canvas {
   display: block;
+}
+.skin-render__canvas {
+  cursor: grab;
+  touch-action: none;
+}
+.skin-render__canvas:active {
+  cursor: grabbing;
 }
 .skin-render__msg {
   position: absolute;
@@ -1083,6 +1293,7 @@
 /* Unregelmäßige „handgezeichnete" Rundungen + dicke Tinten-Ränder. */
 [data-style='doodle'] .card,
 [data-style='doodle'] .instance-card,
+[data-style='doodle'] .instance-row,
 [data-style='doodle'] .mod-row,
 [data-style='doodle'] .modal,
 [data-style='doodle'] .play-stage,
@@ -1154,6 +1365,7 @@
 }
 
 [data-style='doodle'] .instance-card__icon,
+[data-style='doodle'] .instance-row__icon,
 [data-style='doodle'] .mod-row__icon {
   border: 2.5px solid var(--border);
   border-radius: 16px 6px 14px 7px / 7px 14px 6px 16px;
@@ -1190,6 +1402,7 @@
 /* ===================== Doodle intensiver ===================== */
 [data-style='doodle'] .card,
 [data-style='doodle'] .instance-card,
+[data-style='doodle'] .instance-row,
 [data-style='doodle'] .modal,
 [data-style='doodle'] .play-stage,
 [data-style='doodle'] .skin-stage--solo,
@@ -1200,6 +1413,7 @@
 [data-style='doodle'] .select select,
 [data-style='doodle'] .account-pill,
 [data-style='doodle'] .instance-card__icon,
+[data-style='doodle'] .instance-row__icon,
 [data-style='doodle'] .mod-row__icon,
 [data-style='doodle'] .play-pill,
 [data-style='doodle'] .play-pill__play {

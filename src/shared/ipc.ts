@@ -146,6 +146,12 @@ export interface InstallProgress {
 
 export type ModProjectType = 'mod' | 'modpack'
 
+/** Treffer pro Modrinth-Suchseite (für Pagination im Renderer). */
+export const MOD_SEARCH_PAGE_SIZE = 20
+
+/** Loader-freie Modrinth-Inhalte je Instanz-Unterordner. */
+export type ContentKind = 'resourcepack' | 'shaderpack' | 'datapack'
+
 /** Ein Suchtreffer aus der Modrinth-Suche (Mod oder Modpack). */
 export interface ModSearchHit {
   projectId: string
@@ -168,6 +174,8 @@ export interface InstalledMod {
   name?: string
   projectId?: string
   version?: string
+  /** Projekt-Icon (Modrinth-CDN), falls bekannt. */
+  iconUrl?: string
   /** Von `mods:checkUpdates` gesetzt: neuere verfügbare Versionsnummer. */
   updateVersion?: string
 }
@@ -176,6 +184,19 @@ export interface InstalledMod {
 export interface LogChunk {
   instanceId: string
   lines: string[]
+}
+
+/** Status-Push des Auto-Updaters (electron-updater). */
+export interface UpdateStatus {
+  /**
+   * `available` = Update gefunden, lädt herunter; `downloaded` = bereit zum
+   * Installieren (per Neustart); `error` = Prüfung/Download fehlgeschlagen.
+   */
+  state: 'available' | 'downloaded' | 'error'
+  /** Neue Version (bei available/downloaded). */
+  version?: string
+  /** Fehlermeldung (bei error). */
+  message?: string
 }
 
 /** Status-Push während/nach dem Spielstart (M5). */
@@ -223,6 +244,12 @@ export interface IpcInvokeMap {
   'window:isMaximized': {
     args: []
     result: boolean
+  }
+
+  /** Startet das heruntergeladene Update (App startet neu). */
+  'update:install': {
+    args: []
+    result: void
   }
 
   'auth:list': {
@@ -337,7 +364,7 @@ export interface IpcInvokeMap {
 
   /** Modrinth-Mod-Suche, gefiltert nach Loader + MC-Version der Instanz. */
   'mods:search': {
-    args: [instanceId: string, query: string]
+    args: [instanceId: string, query: string, offset?: number]
     result: ModSearchHit[]
   }
   'mods:install': {
@@ -367,6 +394,32 @@ export interface IpcInvokeMap {
     result: InstalledMod[]
   }
 
+  // Loader-freie Inhalte (Ressourcenpakete, später Shader/Datapacks)
+  'content:search': {
+    args: [instanceId: string, kind: ContentKind, query: string, offset?: number]
+    result: ModSearchHit[]
+  }
+  'content:install': {
+    args: [instanceId: string, kind: ContentKind, projectId: string]
+    result: InstalledMod[]
+  }
+  'content:list': {
+    args: [instanceId: string, kind: ContentKind]
+    result: InstalledMod[]
+  }
+  'content:remove': {
+    args: [instanceId: string, kind: ContentKind, fileName: string]
+    result: InstalledMod[]
+  }
+  'content:checkUpdates': {
+    args: [instanceId: string, kind: ContentKind]
+    result: InstalledMod[]
+  }
+  'content:update': {
+    args: [instanceId: string, kind: ContentKind, fileName: string]
+    result: InstalledMod[]
+  }
+
   /** Modrinth-Modpack-Suche. */
   'modpacks:search': {
     args: [query: string]
@@ -389,6 +442,7 @@ export interface IpcEventMap {
   'launch:status': LaunchStatus
   'launch:log': LogChunk
   'window:maximizedChanged': boolean
+  'update:status': UpdateStatus
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

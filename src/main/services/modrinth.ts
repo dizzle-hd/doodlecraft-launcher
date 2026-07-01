@@ -1,4 +1,5 @@
 import type { ModSearchHit, ModProjectType } from '@shared/ipc'
+import { MOD_SEARCH_PAGE_SIZE } from '@shared/ipc'
 
 /** Gemeinsame Modrinth-API-Helfer (für Mods und Modpacks). */
 
@@ -69,14 +70,19 @@ export function mapHit(h: ModrinthSearchHit): ModSearchHit {
   }
 }
 
-/** Baut eine Modrinth-`facets`-Suche und liefert die gemappten Treffer. */
+/**
+ * Baut eine Modrinth-`facets`-Suche und liefert die gemappten Treffer.
+ * `offset` blättert seitenweise (Seitengröße = MOD_SEARCH_PAGE_SIZE).
+ */
 export async function searchProjects(
   query: string,
-  facets: string[][]
+  facets: string[][],
+  offset = 0
 ): Promise<ModSearchHit[]> {
   const params = new URLSearchParams({
     query,
-    limit: '20',
+    limit: String(MOD_SEARCH_PAGE_SIZE),
+    offset: String(Math.max(0, offset)),
     index: 'relevance',
     facets: JSON.stringify(facets)
   })

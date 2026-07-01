@@ -13,7 +13,10 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "package": "electron-vite build && electron-builder --win"
+    "package": "electron-vite build && electron-builder --win",
+    "package:linux": "electron-vite build && electron-builder --linux",
+    "package:flatpak": "electron-vite build && electron-builder --linux flatpak",
+    "release:linux": "electron-vite build && electron-builder --linux --publish always"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -36,6 +39,7 @@
     "@xmcl/unzip": "^2.1.2",
     "@xmcl/user": "^3.0.3",
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.9",
     "prismarine-auth": "^2.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

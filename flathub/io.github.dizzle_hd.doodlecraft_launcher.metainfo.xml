@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream-Metadaten (Flathub-Pflicht). Vor dem Einreichen prüfen mit:
+    flatpak run org.freedesktop.appstream.cli validate io.github.dizzle_hd.doodlecraft_launcher.metainfo.xml
+  TODO vor PR:
+    - <screenshots>: echte, ÖFFENTLICH erreichbare Bild-URLs (z. B. GitHub raw).
+    - Beschreibung ggf. verfeinern.
+    - <releases>: bei jedem Release oben einen Eintrag ergänzen.
+-->
+<component type="desktop-application">
+  <id>io.github.dizzle_hd.doodlecraft_launcher</id>
+
+  <name>DoodleCraft Launcher</name>
+  <summary>Minecraft-Launcher im handgezeichneten Drawing-Style</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      DoodleCraft ist ein Minecraft-Launcher im handgezeichneten Drawing-Style.
+      Anmeldung mit dem Microsoft-Konto funktioniert ohne eigene Azure-App.
+    </p>
+    <p>Funktionen:</p>
+    <ul>
+      <li>Microsoft-Login (Geräte-Code) und Multi-Account</li>
+      <li>Instanzen mit Vanilla und Mod-Loadern (Fabric, Forge, Quilt)</li>
+      <li>Mods, Ressourcenpakete, Shader und Datapacks über Modrinth installieren</li>
+      <li>3D-Skin-Vorschau</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.dizzle_hd.doodlecraft_launcher.desktop</launchable>
+
+  <url type="homepage">https://github.com/dizzle-hd/doodlecraft-launcher</url>
+  <url type="bugtracker">https://github.com/dizzle-hd/doodlecraft-launcher/issues</url>
+
+  <developer id="io.github.dizzle_hd">
+    <name>DizzleHD</name>
+  </developer>
+
+  <content_rating type="oars-1.1" />
+
+  <!--
+    Screenshots liegen unter docs/ im Repo. Die raw-URLs funktionieren, sobald
+    der Stand auf den master-Branch gepusht ist. Falls du auf einem Release-Tag
+    baust, ggf. master -> <tag> in den URLs anpassen.
+  -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/dizzle-hd/doodlecraft-launcher/master/docs/screenshot-play.png</image>
+      <caption>Spielen-Bildschirm mit 3D-Skin-Vorschau</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/dizzle-hd/doodlecraft-launcher/master/docs/screenshot-instances.png</image>
+      <caption>Instanz-Übersicht mit Version, Loader und Spielzeit</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/dizzle-hd/doodlecraft-launcher/master/docs/screenshot-content.png</image>
+      <caption>Instanz-Details: Mods, Ressourcenpakete, Shader und Datapacks verwalten</caption>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#1bd96a</color>
+    <color type="primary" scheme_preference="dark">#12a851</color>
+  </branding>
+
+  <releases>
+    <release version="0.1.0" date="2026-06-28">
+      <description>
+        <p>Erste Veröffentlichung.</p>
+      </description>
+    </release>
+  </releases>
+</component>

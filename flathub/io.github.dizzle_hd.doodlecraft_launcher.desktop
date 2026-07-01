@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DoodleCraft Launcher
+Comment=Minecraft-Launcher im handgezeichneten Drawing-Style
+Exec=doodlecraft-launcher %U
+Icon=io.github.dizzle_hd.doodlecraft_launcher
+Terminal=false
+Categories=Game;
+# Electron setzt WM_CLASS auf den package.json-Namen – für die Icon-Zuordnung.
+StartupWMClass=doodlecraft-launcher

@@ -6,6 +6,15 @@ directories:
 files:
   - out/**/*
   - package.json
+  # Icon (für BrowserWindow.icon -> Taskleiste) ins Paket nehmen und entpacken,
+  # damit der Laufzeitpfad ../../resources/icon.png auf eine echte Datei zeigt.
+  - resources/**/*
+asarUnpack:
+  - resources/**
+# AppImage-Dateiname ohne Leerzeichen – sonst passt er nicht zur URL in
+# latest-linux.yml und Download/Auto-Update schlagen fehl.
+appImage:
+  artifactName: ${name}-${version}.${ext}
 win:
   icon: resources/icon.ico
   target:
@@ -17,8 +26,30 @@ nsis:
   installerIcon: resources/icon.ico
   uninstallerIcon: resources/icon.ico
 linux:
-  icon: resources/icon.png
+  # Verzeichnis mit mehreren PNG-Größen (16…512) für saubere Theme-Integration.
+  icon: resources/icons
   category: Game
   synopsis: Minecraft-Launcher im Drawing-Style
+  description: Minecraft-Launcher im handgezeichneten Drawing-Style mit Login ohne eigene Azure-App.
+  maintainer: DizzleHD <juli@vdweiden.com>
+  # WICHTIG: muss der echten WM_CLASS des Fensters entsprechen (Electron nutzt
+  # den package.json-Namen, nicht den productName) – sonst kein Icon/Match in
+  # der Taskleiste. Prüfen mit: xprop WM_CLASS
+  desktop:
+    StartupWMClass: doodlecraft-launcher
   target:
     - AppImage
+    - deb
+    - flatpak
+# Flatpak: aktuelle Runtime/Base statt electron-builder-Default (20.08).
+# Müssen installiert sein: org.freedesktop.{Platform,Sdk}//25.08 und
+# org.electronjs.Electron2.BaseApp//25.08.
+flatpak:
+  runtimeVersion: '25.08'
+  baseVersion: '25.08'
+# Update-Quelle für electron-updater: erzeugt latest-linux.yml und lädt
+# Releases nach GitHub (mit `--publish always` bzw. gesetztem GH_TOKEN).
+publish:
+  provider: github
+  owner: dizzle-hd
+  repo: doodlecraft-launcher
